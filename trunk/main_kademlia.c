@@ -1,4 +1,4 @@
-#include "communication.h"
+#include "kademlia.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <netdb.h>

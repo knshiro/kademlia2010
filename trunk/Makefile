@@ -14,10 +14,10 @@ CC = gcc -Wall -g
 
 all:   kadmelia 
 
-test :   test.o communication.o
+test :   test.o kademlia.o
 	${CC} -o $@ $^ ${LIBS}
 
-kadmelia:    main.o communication.o
+kadmelia:    main_kademlia.o kademlia.o
 	${CC} -o $@ $^ ${LIBS}
 
 clean:

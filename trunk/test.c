@@ -1,4 +1,4 @@
-#include "communication.h"
+#include "kademlia.h"
 #include "json-c-0.9/json.h"
 #include <stdlib.h>
 #include <stdio.h>

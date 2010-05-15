@@ -1,4 +1,4 @@
-#include "communication.h"
+#include "kademlia.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -165,6 +165,10 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
     return 0; 
 }
 
+/**
+ * Parses a udp packet to a kadmelia message 
+ */
+
 struct kademMessage kademUdpToMessage(char * udpPacket, int length){
     int payloadLength;
     struct kademMessage message;
@@ -181,7 +185,7 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length){
 }
 
 /**
- *  Sends a kadmelia ping request to addr, port
+ *  sends a kadmelia ping request to addr, port
  */
 
 int kademPing(struct kademMachine * machine, char * addr, int port){
@@ -257,8 +261,6 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 }
 
 int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message){
-
-
 
     return 0; 
 }
