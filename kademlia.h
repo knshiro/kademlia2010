@@ -32,18 +32,18 @@ int _kdm_debug ;
 /* Structure to store the message which was sent/received */
 
 struct kademMessage {
-        json_object *header;
-            int payloadLength;    // Length of the payload and header
-                char payload[KADEM_MAX_PAYLOAD_SIZE];    // Payload of packet
+    json_object *header;
+    int payloadLength;    // Length of the payload and header
+    char payload[KADEM_MAX_PAYLOAD_SIZE];    // Payload of packet
 };
 
 
 struct kademMachine {
-        int sock_local_rpc;
-            int sock_p2p;
-                int port;
-                    char id[160];
-                        struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
+    int sock_local_rpc;
+    int sock_p2p;
+    int port;
+    char id[35];
+    struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
 };
 
 
@@ -77,69 +77,69 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length);
 int kademPing(struct kademMachine * machine, char * addr, int port);
 
 /**
- *  * @return int  0   success
- *   *              -1  failure
- *   */
+ * @return int  0   success
+ *              -1  failure
+*/
 int kademPong(struct kademMachine machine, struct kademMessage *message, char * addr, int port);
 
 /**
- *  * @return int  0   success
- *   *              -1  failure
- *   */
+ * @return int  0   success
+ * -1  failure
+ */
 int kademHandlePong(char * addr, int port);
 
 
 
 
 /**
- *  * Send a FIND_NODE request 
- *   * @param string key : key to look for
- *    *
- *     * @return int  0   success
- *      *              -1  failure
- *      */
-int kademFindNode(struct kademMachine * machine, char * Id);
+ * Send a FIND_NODE request 
+ * @param string key : key to look for
+ * 
+ * @return int  0   success
+ * -1  failure
+ */
+int kademFindNode(struct kademMachine * machine, char * id, char *dst_addr, int dst_port);
 
 /**
- *  * Called by the message listener and handle a FIND_NODE request
- *   *
- *    * @return int  0   success
- *     *              -1  failure
- *     */
+ * Called by the message listener and handle a FIND_NODE request
+ * 
+ * @return int  0   success
+ * -1  failure
+ */
 int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message);
 
 /**
- *  * Called by the message listener and handle a FIND_NODE answer
- *   *
- *    * @return int  0   success
- *     *              -1  failure
- *     */
+ * Called by the message listener and handle a FIND_NODE answer
+ * 
+ * @return int  0   success
+ *              -1  failure
+ */
 int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage * message);
 
 
 /**
- *  * Send a FIND_VALUE request 
- *   * @param string key : key to look for
- *    *
- *     * @return int  0   success
- *      *              -1  failure
- *      */
-int kademFindValue(struct kademMachine * machine, char * Id);
+ * Send a FIND_VALUE request 
+ *
+ * @param string key : key to look for 
+ * @return int  0   success
+ * -1  failure
+ */
+int kademFindValue(struct kademMachine * machine, char * value, char *dst_addr, int dst_port);
 
 /**
- *  * Called by the message listener and handle a FIND_VALUE request
- *   *
- *    * @return int  0   success
- *     *              -1  failure
- *     */
+ * Called by the message listener and handle a FIND_VALUE request
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
 int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message);
 
 /**
- *  * Called by the message listener and handle a FIND_VALUE answer
- *   *
- *    * @return int  0   success
- *     *              -1  failure
- *     */
+ * Called by the message listener and handle a FIND_VALUE answer
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
 int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message);
 
 

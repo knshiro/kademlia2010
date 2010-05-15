@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include "md5.h"
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 
 /* Message types */
 const char * const KADEM_QUERY      =    "q";                                        
@@ -29,6 +34,16 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     int sockfd;
     struct sockaddr_in local_rpc_addr, p2p_addr;
     int length = sizeof(struct sockaddr_in);
+   
+    char hostname[100]; 
+    char buffer[20];
+    char port_str[6];
+    int hostname_len = sizeof(hostname);
+    struct hostent *server;
+    unsigned int buf_len;
+    char signature[128];
+    char id[36]; 
+
 
 
     //####################################
@@ -87,7 +102,31 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
         close(sockfd);
         return -1;
     }
+    
+    //#######################################
+    // Creation of the id                   #
+    //#######################################
 
+    //Get the host ip
+    gethostname(hostname, hostname_len);     
+    kdm_debug("Host name : %s\n",hostname);
+    server = gethostbyname(hostname);
+    kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
+   
+    //Create the string id 
+    strcpy(buffer,inet_ntoa(*((struct in_addr *)server->h_addr)));
+    strcat(buffer,"/");
+    sprintf(port_str,"%d",port_p2p);
+    strcat(buffer,port_str);
+    buf_len = strlen(buffer);
+    kdm_debug("Id not hashed: %s\n", buffer);
+
+    //Hash
+    md5_buffer(buffer,buf_len,signature);
+    md5_sig_to_string(signature, id, 33);
+    kdm_debug("signature: %s\n", id);
+
+    strcpy(machine->id,id);
 
     return 0;
 }
@@ -230,9 +269,33 @@ int kademHandlePong(char * addr, int port){
     return 0; 
 }
 
-int kademFindNode(struct kademMachine * machine, char * Id){
+int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, int port){
+    
+    struct kademMessage message;
+    int ret;
+    json_object *header, *argument;
+    char * transactionId = "01";    //TODO create a real transactionId
+   
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+    json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_NODE));
 
-    return 0; 
+    argument = json_object_new_object();
+    json_object_object_add(argument,"id",json_object_new_string(machine->id));
+    json_object_object_add(argument,"target",json_object_new_string(target_id));
+
+    json_object_object_add(header,"a",json_object_get(argument));
+
+    message.header = header;
+    message.payloadLength = 0;
+    
+    ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
+    json_object_put(header);
+    json_object_put(argument);
+
+    return ret;
+
 }
 
 int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message){
@@ -247,10 +310,35 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
     return 0; 
 }
 
-int kademFindValue(struct kademMachine * machine, char * Id){
+int kademFindValue(struct kademMachine * machine, char * value, char *addr, int port){
 
+    struct kademMessage message;
+    int ret;
+    json_object *header, *argument;
+    char * transactionId = "01";    //TODO create a real transactionId
+    char * token = "tokenabc1";     //TODO create a real token
 
-    return 0; 
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+    json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_VALUE));
+
+    argument = json_object_new_object();
+    json_object_object_add(argument,"id",json_object_new_string(machine->id));
+    json_object_object_add(argument,"token",json_object_new_string(token));
+    json_object_object_add(argument,"value",json_object_new_string(value));
+
+    json_object_object_add(header,"a",json_object_get(argument));
+
+    message.header = header;
+    message.payloadLength = 0;
+
+    ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
+    json_object_put(header);
+    json_object_put(argument);
+
+    return ret;
+
 }
 
 int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message){
