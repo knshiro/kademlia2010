@@ -18,6 +18,8 @@ int main(int argc, char *argv[]){
 
     _kdm_debug = 1;
     initMachine(&machine,6000,7000);
+  
+    kdm_debug("Machine inited, id: %s\n", machine.id);
     kademPing(&machine,"127.0.0.1",4000);
    
 

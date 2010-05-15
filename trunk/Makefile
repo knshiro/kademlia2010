@@ -8,16 +8,16 @@ JSON_LIB=$(JSON_DIR)arraylist.o \
 			 $(JSON_DIR)printbuf.o
 
 
-LIBS = ${JSON_LIB} 
+LIBS = ${JSON_LIB}
 CC = gcc -Wall -g
 
 
 all:   kadmelia 
 
-test :   test.o kademlia.o
+test :   test.o kademlia.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
-kadmelia:    main_kademlia.o kademlia.o
+kadmelia:    main_kademlia.o kademlia.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
 clean:
