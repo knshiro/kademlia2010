@@ -75,10 +75,17 @@ unsigned int fromlen, numread;
 fd_set readfds;
 struct sockaddr_in from;
 fromlen = sizeof(from);
-char buf[400];
+char buf_rec[400];
+char buf_send[400];
+char buf2[400];
 struct timeval tv;
 tv.tv_sec = 0;
-int srv;
+int srv, leng_name,i;
+char* to_ID=(char*)malloc(10*sizeof(char));
+char* ID=(char*)malloc(10*sizeof(char));
+char* delims = (char*)malloc(10*sizeof(char));
+char* message = (char*)malloc(400*sizeof(char));
+
 		//stdin or socket!
 		while(1){
 
@@ -95,29 +102,41 @@ int srv;
 				//Socket->printf
 				if(FD_ISSET(cpcb.sockfd, &readfds)) {
 
-					bzero(buf, sizeof(buf));
-					if((numread = recvfrom(cpcb.sockfd,buf,sizeof(buf), 0, (struct sockaddr*)&from, &fromlen)) < 0){
+					bzero(buf_rec, sizeof(buf_rec));
+					if((numread = recvfrom(cpcb.sockfd,buf_rec,sizeof(buf_rec), 0, (struct sockaddr*)&from, &fromlen)) < 0){
 						error("Couldnt' receive from socket");	
 					}
-				printf("%s",buf);
-				}
+				printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
+				printf("%s\n",buf_rec);
+				} 
 
 				//stdin->send
 				else if(FD_ISSET(fileno(stdin), &readfds)){
-					fgets(buf, sizeof buf, stdin);
-					//printf("buf: %s",buf);
+					fgets(buf_send, sizeof buf_send, stdin);
+					//printf("buf: %s",buf_send);
 					//trouver le pseudo et  l'extraire.
-					/*
-					char delims[] = " ";
-					char* ID=(char*)malloc(10*sizeof(char));
-					ID = strtok(buf,delims);
-					printf("name: %s\n",ID);
-					printf("buf: %s\n",buf);
-					delims = ":";
-					ID = strtok(ID,delims);
-					printf("name2: %s\n",ID);
-					*/
-					if(sendto(sockfd, buf, sizeof(buf), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
+					for(i=0;i<strlen(buf_send);i++){
+						buf2[i]=buf_send[i];
+					}
+										
+					delims = " ";
+					to_ID = strtok(buf_send,delims);
+					//printf("to_ID: %s\n",to_ID);
+					leng_name = strlen(to_ID)-3;
+					//printf("leng_name: %i\n",leng_name);
+					if(leng_name<1){
+						exit(-1);
+					}
+					strncpy(ID,to_ID+3,leng_name);
+ 					//printf("ID: %s\n",ID);
+					for(i=0;i<400;i++){
+						message[i]="\0";
+					}
+					strncpy(message,buf2+leng_name+4,strlen(buf2)-leng_name-4);
+					printf("message: %s\n\n",message);
+					//changer sockaddr pour envoyer.
+					//envoyer le resultat.*/
+					if(sendto(sockfd, message, strlen(message), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
 						error("Couldnt' send");
 					}
 					//printf("Message sent\n");
