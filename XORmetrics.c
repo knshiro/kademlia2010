@@ -2,22 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Declaration of functions */
-char* XORmetrics (char* hash1, char* hash2);
+/* Declaration of functions 
+char* XORmetrics (char* hash1, char* hash2); */
 
-
-/* Main */
-int main(int argc, char **argv){
-
-char* hash1 = "AC1059B1";
-char* hash2 = "01E15485";
-
-char* result = XORmetrics(hash1,hash2);
-
-	printf("%s\n", result);
-	getch();
-}
-
+#include "XORmetrics.h"
 
 char* XORmetrics (char* hash1, char* hash2)
 {
