@@ -212,6 +212,9 @@ void	md5_sig_to_string(void *signature, char *str, const int str_len);
 extern
 void	md5_sig_from_string(void *signature, const char *str);
 
+/* hash */
+void	hash(const unsigned int buf_len, const char* buffer, char* str, char* signature);
+
 /*<<<<<<<<<<   This is end of the auto-generated output from fillproto. */
 
 #endif /* ! __MD5_H__ */

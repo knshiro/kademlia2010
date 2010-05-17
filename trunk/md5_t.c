@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "md5.h"
+#include "md5.c"
 
 
 int	main(int argc, char **argv){
@@ -13,8 +14,13 @@ const unsigned int buf_len = strlen(buffer);
 char* signature= (char*)malloc(128*sizeof(char));
 char* str = (char*)malloc(35*sizeof(char));
 
-md5_buffer(buffer,buf_len,signature);
+/* md5_buffer(buffer,buf_len,signature);
 md5_sig_to_string(signature, str, 33);
+*/
+hash(buf_len, buffer, str, signature);
+
 printf("signature: %s\n", str);
+
+getch();
 
 }

@@ -64,6 +64,11 @@ static char *version_id = "$MD5Version: 1.0.0 November-19-1997 $";
 
 /****************************** local routines *******************************/
 
+void	hash(const unsigned int buf_len, const char* buffer, char* str, char* signature)
+{
+ 		md5_buffer(buffer,buf_len,signature);
+		md5_sig_to_string(signature, str, 33);
+}
 /*
  * process_block
  *
