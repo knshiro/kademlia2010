@@ -178,5 +178,6 @@ char* XORmetrics (char* hash1, char* hash2)
 		    default : printf("\nError in BHconversion");
 		 }
 	 }
+	 HEXdistance[imax] = '\0';
 	 return HEXdistance;
 }
