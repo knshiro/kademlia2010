@@ -70,6 +70,18 @@ char* XORmetrics (char* hash1, char* hash2)
                  break;
    			case 'F' :  n3 = 1; n2 = 1; n1 = 1; n0 = 1;
                  break;
+		    case 'a' :  n3 = 1; n2 = 0; n1 = 1; n0 = 0;
+                 break;
+   			case 'b' :  n3 = 1; n2 = 0; n1 = 1; n0 = 1;
+                 break;
+   			case 'c' :  n3 = 1; n2 = 1; n1 = 0; n0 = 0;
+                 break;
+   			case 'd' :  n3 = 1; n2 = 1; n1 = 0; n0 = 1;
+                 break;
+   			case 'e' :  n3 = 1; n2 = 1; n1 = 1; n0 = 0;
+                 break;
+   			case 'f' :  n3 = 1; n2 = 1; n1 = 1; n0 = 1;
+                 break;
         default : printf("\nError in HBconversion\n");
 		}
 
@@ -120,6 +132,18 @@ char* XORmetrics (char* hash1, char* hash2)
    			case 'E' :  n3 = 1; n2 = 1; n1 = 1; n0 = 0;
                  break;
    			case 'F' :  n3 = 1; n2 = 1; n1 = 1; n0 = 1;
+                 break;
+		    case 'a' :  n3 = 1; n2 = 0; n1 = 1; n0 = 0;
+                 break;
+   			case 'b' :  n3 = 1; n2 = 0; n1 = 1; n0 = 1;
+                 break;
+   			case 'c' :  n3 = 1; n2 = 1; n1 = 0; n0 = 0;
+                 break;
+   			case 'd' :  n3 = 1; n2 = 1; n1 = 0; n0 = 1;
+                 break;
+   			case 'e' :  n3 = 1; n2 = 1; n1 = 1; n0 = 0;
+                 break;
+   			case 'f' :  n3 = 1; n2 = 1; n1 = 1; n0 = 1;
                  break;
         default : printf("\nError in HBconversion\n");
 		}
