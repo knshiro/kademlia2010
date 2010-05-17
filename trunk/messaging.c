@@ -108,17 +108,18 @@ char* message = (char*)malloc(400*sizeof(char));
 					}
 				printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
 				printf("%s\n",buf_rec);
+				printf("Fin du printf\n");
 				} 
 
 				//stdin->send
 				else if(FD_ISSET(fileno(stdin), &readfds)){
-					fgets(buf_send, sizeof buf_send, stdin);
+					fgets(buf_send, sizeof(buf_send), stdin);
 					//printf("buf: %s",buf_send);
 					//trouver le pseudo et  l'extraire.
-					for(i=0;i<strlen(buf_send);i++){
-						buf2[i]=buf_send[i];
-					}
-										
+					//for(i=0;i<strlen(buf_send);i++){
+					//	buf2[i]=buf_send[i];
+					//}
+					strcpy(buf2,buf_send);					
 					delims = " ";
 					to_ID = strtok(buf_send,delims);
 					//printf("to_ID: %s\n",to_ID);
@@ -129,10 +130,11 @@ char* message = (char*)malloc(400*sizeof(char));
 					}
 					strncpy(ID,to_ID+3,leng_name);
  					//printf("ID: %s\n",ID);
-					for(i=0;i<400;i++){
-						message[i]="\0";
-					}
-					strncpy(message,buf2+leng_name+4,strlen(buf2)-leng_name-4);
+					//for(i=0;i<400;i++){
+					//	message[i]="\0";
+					//}
+					//strncpy(message,buf2+leng_name+4,strlen(buf2)-leng_name-4);
+					strcpy(message,buf2+leng_name+4);
 					printf("message: %s\n\n",message);
 					//changer sockaddr pour envoyer.
 					//envoyer le resultat.*/
