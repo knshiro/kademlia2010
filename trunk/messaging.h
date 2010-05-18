@@ -53,9 +53,11 @@ struct rtlp_client_pcb {
 int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, int dst_port);
 struct kademMessage kademUdpToMessage(char * udpPacket, int length);
 void kdm_debug(const char *msg, ...);
+
+
 int print_routing_table(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine);
-
-
+int print_object_ids(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine);
+int ping_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node);
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -66,3 +68,4 @@ extern const char * const KADEM_PING;
 extern const char * const KADEM_STORE;
 extern const char * const KADEM_FIND_NODE;
 extern const char * const KADEM_FIND_VALUE;
+extern const char * const KADEM_PRINT_OBJECT_IDS;
