@@ -15,6 +15,18 @@
 
 
 
+/* Message types */
+const char * const KADEM_QUERY      =    "q";                                        
+const char * const KADEM_ANSWER     =    "r";                                        
+            
+/*Message query types */
+const char * const KADEM_PING       =    "ping";                                     
+const char * const KADEM_STORE      =    "put";                                      
+const char * const KADEM_FIND_NODE  =    "find_node";                                
+const char * const KADEM_FIND_VALUE =    "get";  
+const char * const KADEM_PRINT_TABLE = 	 "print_routing_table";
+
+
 /* create a socket and bind it to the local address and a port  */
 int create_socket(int port){
   int sockfd;
@@ -55,6 +67,7 @@ int create_socket(int port){
 
 int main(int* argc, char argv[]){
 
+struct dhtMachine dhtmachine;
 struct rtlp_client_pcb cpcb;
 int sockfd =  create_socket(1200);
 
@@ -85,6 +98,9 @@ char* to_ID=(char*)malloc(10*sizeof(char));
 char* ID=(char*)malloc(10*sizeof(char));
 char* delims = (char*)malloc(10*sizeof(char));
 char* message = (char*)malloc(400*sizeof(char));
+
+	
+int k = print_routing_table(&cpcb, &dhtmachine);
 
 		//stdin or socket!
 		while(1){
@@ -129,10 +145,7 @@ char* message = (char*)malloc(400*sizeof(char));
 						exit(-1);
 					}
 					strncpy(ID,to_ID+3,leng_name);
- 					//printf("ID: %s\n",ID);
-					//for(i=0;i<400;i++){
-					//	message[i]="\0";
-					//}
+ 					
 					//strncpy(message,buf2+leng_name+4,strlen(buf2)-leng_name-4);
 					strcpy(message,buf2+leng_name+4);
 					printf("message: %s\n\n",message);
@@ -147,6 +160,33 @@ char* message = (char*)malloc(400*sizeof(char));
 		}
 
 return 0;
+}
+
+
+
+int print_routing_table(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine){
+	
+	char* header2;
+	dhtmachine->address_ip = "127.0.0.1";
+	dhtmachine->port = 4200;
+	
+
+	struct kademMessage message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
+	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_PRINT_TABLE));
+	
+	message.header = header;
+	message.payloadLength = 0;
+
+	header2 = json_object_to_json_string(message.header);
+    	
+    	printf("message: %s\n",header2);	
+
+	int res = kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port);
+
 }
 
 
