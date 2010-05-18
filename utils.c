@@ -1,5 +1,3 @@
-
-
 #include "messaging.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +19,7 @@ extern const char * const KADEM_STORE;
 extern const char * const KADEM_FIND_NODE;
 extern const char * const KADEM_FIND_VALUE;
 extern const char * const KADEM_PRINT_TABLE;
-
+extern const char * const KADEM_PRINT_OBJECT_IDS;
 
 
 void kdm_debug(const char *msg, ...){
@@ -33,6 +31,7 @@ void kdm_debug(const char *msg, ...){
     va_end(ap);
 }
 
+
 int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, int dst_port){
 
     int messageSize = 0, sentBytes = 0;
@@ -40,7 +39,6 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
     char *header; 
     struct sockaddr_in serv_addr; 
     struct hostent *server;
-    
     
     //###############################
     // Find the address of the peer #
@@ -94,14 +92,15 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
 
     //###############################
     // Write message to socket      #
-    //###############################
-    
+    //###############################  
+
     if((sentBytes = sendto(sockfd, udpPacket, messageSize , 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0)
     {
         perror("Could not send packet!");
         return -1;
     }
-    kdm_debug("Packet sent (%d bytes)\n", sentBytes);
+    
+     kdm_debug("Packet sent (%d bytes)\n", sentBytes);
     
     return 0; 
 }
