@@ -22,6 +22,10 @@ kadmelia:    main_kademlia.o kademlia.o md5.o
 
 messaging: messaging.o utils.o md5.o
 	${CC} -o $@ $^ ${LIBS}
+
+test_local_rpc: test_local_rpc.o utils.o md5.o
+	${CC} -o $@ $^ ${LIBS}
+
 clean:
 	rm *.o kadmelia test
 

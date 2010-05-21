@@ -26,7 +26,7 @@ const char * const KADEM_FIND_NODE  =    "find_node";
 const char * const KADEM_FIND_VALUE =    "get";  
 const char * const KADEM_PRINT_TABLE = 	 "print_routing_table";
 const char * const KADEM_PRINT_OBJECT_IDS = "print_object_ids";
-
+const char * const KADEM_KILL_NODE = "kill_node";
 
 /* create a socket and bind it to the local address and a port  */
 int create_socket(int port){
@@ -99,6 +99,7 @@ struct sockaddr_in from;
 fromlen = sizeof(from);
 char buf_rec[400];
 char buf_send[400];
+char buf_send2[40];
 char buf2[400];
 struct timeval tv;
 tv.tv_sec = 0;
@@ -140,23 +141,58 @@ char* message = (char*)malloc(400*sizeof(char));
 				//stdin->send
 				else if(FD_ISSET(fileno(stdin), &readfds)){
 					fgets(buf_send, sizeof(buf_send), stdin);
-					//printf("buf_send: %s\n",buf_send);
-					//int leg = strlen(buf_send);
-					//printf("len: %i\n",leg);
-					if(strcmp(buf_send,"//print_table")==0){
+					int leg = strlen(buf_send);
+					strncpy(buf_send2,buf_send,leg-1);
+
+					if(strcmp(buf_send2,"//print_table")==0){
 						if(print_routing_table(&cpcb, &dhtmachine)>0){
 							printf("Request print table sent!\n");
 						}
+						bzero(buf_send2, sizeof(buf_send2));
 					}
-					else if(strcmp(buf_send,"//ping")==0){
+					else if(strcmp(buf_send2,"//print_object")==0){
 						if(print_object_ids(&cpcb, &dhtmachine)>0){
 							printf("Request print object ids sent!\n");
 						}
+						bzero(buf_send2, sizeof(buf_send2));
 					}
-					else if(strcmp(buf_send,"//print_object")==0){
-						if(ping_node(&cpcb,&dhtmachine,"joe")>0){
+					else if(strcmp(strtok(buf_send2," "),"//ping")==0){
+						char ping[40];
+						strcpy(ping,buf_send2+7);
+						if(ping_node(&cpcb,&dhtmachine,ping)>0){
 							printf("Ping sent!\n");
 						}
+						bzero(buf_send2, sizeof(buf_send2));
+						bzero(ping, sizeof(ping));
+					}
+					else if(strcmp(buf_send2,"//kill_node")==0){
+						if(kill_node(&cpcb, &dhtmachine)>0){
+							printf("kill_node sent!\n");
+						}
+						bzero(buf_send2, sizeof(buf_send2));
+					}
+					else if(strcmp(buf_send2,"//put")==0){
+						if(put(&cpcb,&dhtmachine,"jean")>0){
+							printf("Put sent!\n");
+						}
+					}
+					else if(strcmp(strtok(buf_send2," "),"//get")==0){
+						char get_[40];
+						strcpy(get_,buf_send2+6);
+						if(get(&cpcb,&dhtmachine,get_)>0){
+							printf("Get sent!\n");
+						}
+						bzero(buf_send2, sizeof(buf_send2));
+						bzero(get_, sizeof(get_));
+					}
+					else if(strcmp(buf_send2,"//find_node")==0){
+						char find[40];
+						strcpy(find,buf_send2+12);
+						if(find_node(&cpcb,&dhtmachine,find)>0){
+							printf("Find node sent!\n");
+						}
+						bzero(buf_send2, sizeof(buf_send2));
+						bzero(find, sizeof(find));
 					}
 					else{
 						strcpy(buf2,buf_send);					
@@ -170,7 +206,6 @@ char* message = (char*)malloc(400*sizeof(char));
 						}
 						strncpy(ID,to_ID+3,leng_name);
  					
-						//strncpy(message,buf2+leng_name+4,strlen(buf2)-leng_name-4);
 						strcpy(message,buf2+leng_name+4);
 						//printf("message: %s\n\n",message);
 						//changer sockaddr pour envoyer.
@@ -242,7 +277,6 @@ return 1;
 
 
 
-//marche pas encore.
 int ping_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node){
 
 	char* header2;
@@ -253,12 +287,11 @@ int ping_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char*
 	header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
-	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_PING));
+    	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_PING));
 
- 	argument = json_object_new_object();
+   	argument = json_object_new_object();
    	json_object_object_add(argument,"id",json_object_new_string(node));
     	json_object_object_add(header,"a",json_object_get(argument));
-	json_object_object_add(header, "a",json_object_new_string(argument));
 
 	message.header = header;
 	message.payloadLength = 0;
@@ -275,7 +308,122 @@ return 1;
 }
 
 
+int kill_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine){
 
+	char* header2;
+
+	struct kademMessage message;
+	json_object *header;
+
+	header = json_object_new_object(); 
+	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_KILL_NODE));
+	
+	message.header = header;
+	message.payloadLength = 0;
+
+	header2 = json_object_to_json_string(message.header);
+    	
+    	printf("message: %s\n",header2);	
+
+	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
+		return 0;
+	}
+
+return 1;
+}
+
+
+int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* value){
+
+	char* header2;
+
+	struct kademMessage message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_STORE));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"value",json_object_new_string(value));
+	json_object_object_add(argument,"numbytes",json_object_new_string("6"));
+    	json_object_object_add(header,"a",json_object_get(argument));
+
+	message.header = header;
+	message.payloadLength = 0;
+
+	header2 = json_object_to_json_string(message.header);
+    	
+    	printf("message: %s\n",header2);	
+
+	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
+		return 0;
+	}
+
+return 1;
+}
+
+int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
+
+	char* header2;
+
+	struct kademMessage message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_VALUE));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"value",json_object_new_string(key));
+    	json_object_object_add(header,"a",json_object_get(argument));
+
+	message.header = header;
+	message.payloadLength = 0;
+
+	header2 = json_object_to_json_string(message.header);
+    	
+    	printf("message: %s\n",header2);	
+
+	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
+		return 0;
+	}
+
+return 1;
+}
+
+int find_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node){
+
+	char* header2;
+
+	struct kademMessage message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_NODE));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"value",json_object_new_string(node));
+    	json_object_object_add(header,"a",json_object_get(argument));
+
+	message.header = header;
+	message.payloadLength = 0;
+
+	header2 = json_object_to_json_string(message.header);
+    	
+    	printf("message: %s\n",header2);	
+
+	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
+		return 0;
+	}
+
+return 1;
+}
 
 
 
