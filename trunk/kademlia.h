@@ -11,20 +11,41 @@
 #include <stdio.h>
 #include "node.h"
 
+
+/* max function*/
+#ifndef max
+    #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+
+
 /* Some sizes */
 #define KADEM_MAX_PAYLOAD_SIZE  4096
 #define KADEM_MAX_SEND_BUF_SIZE 8
 
-
 /* Message types */
 extern const char * const KADEM_QUERY;   
 extern const char * const KADEM_ANSWER; 
+extern const char * const KADEM_ERROR; 
 
 /*Message query types */
 extern const char * const KADEM_PING;
 extern const char * const KADEM_STORE;
 extern const char * const KADEM_FIND_NODE;
 extern const char * const KADEM_FIND_VALUE;
+
+/* Message error codes */
+extern const char * const KADEM_ERROR_GENERIC;
+extern const char * const KADEM_ERROR_INVALID_TOKEN;
+extern const char * const KADEM_ERROR_PROTOCOL;
+extern const char * const KADEM_ERROR_METHOD_UNKNOWN;
+extern const char * const KADEM_ERROR_STORE;
+
+/* Message error values */
+extern const char * const KADEM_ERROR_GENERIC_VALUE;
+extern const char * const KADEM_ERROR_INVALID_TOKEN_VALUE;
+extern const char * const KADEM_ERROR_PROTOCOL_VALUE;
+extern const char * const KADEM_ERROR_METHOD_UNKNOWN_VALUE;
+extern const char * const KADEM_ERROR_STORE_VALUE;
 
 /* Debug variable */
 int _kdm_debug ;
@@ -51,22 +72,22 @@ struct kademMachine {
 
 
 /**
- *  * Print if in debug mode
- *   */
+ * Print if in debug mode
+*/
 
 void kdm_debug(const char *msg, ...);
 
 
 /**
- *  * @return int  0   success
- *   *              -1  failure
- *   */
+ * @return int  0   success
+ *              -1  failure
+ */
 int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p);
 
 /**
- *  * @return int  0   success
- *   *              -1  failure
- *   */
+ * @return int  0   success
+ *              -1  failure
+ */
 int kademSendMessage(int sockfd, struct kademMessage * message, char * addr, int port);
 
 
@@ -175,5 +196,17 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
  */
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message);
 
+/**
+ * Sends an message containing an error
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port);
 
+    
+/**
+ * Functions which starts the service
+ *
+*/
+int startKademlia(struct kademMachine * machine);
 #endif

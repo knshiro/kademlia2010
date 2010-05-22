@@ -10,41 +10,66 @@
 
 int main(void)
 {
-	struct store_file* file;
+	struct store_file* file1;
 	struct store_file* file2;
+	struct store_file* file3;
+	struct store_file* file4;
 	
-	/*char* _key = malloc(400*sizeof(char));
-	char* _value = malloc(400*sizeof(char));*/
 	char* _key = "100";
 	char* _value = "bonjour";
-	int _timestamp = 1;
 	
-	/*char* _key2 = malloc(400*sizeof(char));
-	char* _value2 = malloc(400*sizeof(char));*/
 	char* _key2 = "200";
 	char* _value2 = "bonjour2";
-	int _timestamp2 = 2;	
 
-	file = malloc(sizeof(store_file));
-	file2 = malloc(sizeof(store_file));
-	create_store_file(file, _key, _value, _timestamp);
-	create_store_file(file2, _key2, _value2, _timestamp2);
-	printf("key: %s\n value: %s\n timestamp: %d\n", file->key, file->value, file->timestamp);
+	char* _key3 = "300";
+	char* _value3 = "bonjour3";
+	char* _key4 = "400";
+	char* _value4 = "bonjour4";
+
+	file1 = create_store_file( _key, _value);
+	file2 = create_store_file(_key2, _value2);
+	printf("key: %s\n value: %s\n timestamp: %d\n", file1->key, file1->value, file1->timestamp);
+	printf("key2: %s\n value2: %s\n timestamp2: %d\n", file2->key, file2->value, file2->timestamp);
 	
-	stored_values values = malloc(sizeof(stored_values));
-	values = insert_to_tail_file(file, file2);
-	printf("key2: %s\n value2: %s\n timestamp2: %d\n", values->next->key, values->next->value, values->next->timestamp);
+	file1 = insert_to_tail_file(file1, file2);
+	printf("key2: %s\n value2: %s\n timestamp2: %d\n", file1->next->key, file1->next->value, file1->next->timestamp);
 	
-	printf("ok\n");
 	store_file* find_value = malloc(sizeof(store_file));
 	char* _find_key = "200";
-	find_value = find_key(values, _find_key);
-	printf("cherche key 200: %s\n", find_value->key);
+	find_value = find_key(file1, _find_key);
+	printf("cherche key %s: %s\n", _find_key, find_value->key);
+    printFiles(file1);
 
-	values = delete_head_file(values);
-	printf("value: %s\n",values->value);
+	file1 = delete_head_file(file1);
+	printf("value after deletion: %s\n",file1->value);
 
+    printFiles(file1);
+	file3 = create_store_file(_key3, _value3);
+	file1 = insert_to_tail_file(file1, file3);
+	file4 = create_store_file(_key4, _value4);
+	file1 = insert_to_tail_file(file1, file4);
+    
+    printFiles(file1);
+	/*int i = 3;
+	time_t _timestamp;
+	time_t _timestamp2;
+	_timestamp = time (NULL);
+	_timestamp2 = time (NULL)-i;
 	
+	printf("timestamp: %d\ntimestamp-3: %d\n", _timestamp, _timestamp2);
+	*/
+	printf("ok\n");
+	sleep(2);
+    
+    file4 = create_store_file(_key4, _value4);
+	file1 = insert_to_tail_file(file1, file4);
+
+    printFiles(file1);
+
+	file1 = clean(file1, 1);
 	
+    printFiles(file1);
+    printf("value: %s\n", file1->value);	
+
 	return 0;
 }

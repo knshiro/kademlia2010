@@ -12,12 +12,12 @@ LIBS = ${JSON_LIB}
 CC = gcc -Wall -g
 
 
-all:   kadmelia 
+all:   kademlia 
 
-test :   test.o kademlia.o md5.o 
+test :   test_kademlia.o kademlia.o md5.o 
 	${CC} -o $@ $^ ${LIBS}
 
-kadmelia:    main_kademlia.o kademlia.o md5.o
+kademlia:    main_kademlia.o kademlia.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
 messaging: messaging.o utils.o md5.o
@@ -26,8 +26,11 @@ messaging: messaging.o utils.o md5.o
 test_local_rpc: test_local_rpc.o utils.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
+test_store_file: test_store_file.o store_file.o 
+	${CC} -o $@ $^ ${LIBS}
+
 clean:
-	rm *.o kadmelia test
+	rm *.o kademlia test
 
 %.o: %.c
 	${CC} -o $@ -c $< 
