@@ -15,14 +15,13 @@ int main(int argc, char *argv[]){
     struct kademMessage message;
     char udpPacket[400];
     char * transactionId = "01";
+    char * addr = "127.0.0.1";
+    int port = 4000;
 
     _kdm_debug = 1;
     initMachine(&machine,6000,7000);
-  
     kdm_debug("Machine inited, id: %s\n", machine.id);
-    kademPing(&machine,"127.0.0.1",4000);
-   
-
+  
     //###############################
     // Test of udpToMessage         #
     //###############################
@@ -48,6 +47,36 @@ int main(int argc, char *argv[]){
     //###############################
     // End  Test of udpToMessage    #
     //###############################
+
+    kdm_debug(">>>>Ping\n");
+    kademPing(&machine,"127.0.0.1",4000);
+    kdm_debug("<<<<Ping\n\n");
+   
+    kdm_debug(">>>>Pong\n");
+    kademPong(&machine,&message,addr,port);
+    kdm_debug("<<<<Pong\n\n");
+    
+    kdm_debug(">>>>Find Node\n");
+    kademFindNode(&machine,"test_node",addr,port);
+    kdm_debug("<<<<Find Node\n\n");
+    
+    kdm_debug(">>>>Handle Find Node\n");
+    kademHandleFindNode(&machine,&message,addr,port);
+    kdm_debug("<<<<Handle Find Node\n\n");
+    
+    kdm_debug(">>>>Find value\n");
+    kademFindValue(&machine,"value1",addr,port);
+    kdm_debug("<<<<Find value\n\n");
+    
+    kdm_debug(">>>>Handle Find value\n");
+    kademHandleFindValue(&machine,&message,addr,port);
+    kdm_debug("<<<<Handle Find value\n\n");
+    
+    kdm_debug(">>>>Store value\n");
+    kademStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
+    kdm_debug("<<<<Store value\n\n");
+
+
 
     return 0;
 }

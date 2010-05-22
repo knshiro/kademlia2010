@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "node.h"
 
 /* Some sizes */
 #define KADEM_MAX_PAYLOAD_SIZE  4096
@@ -44,6 +45,8 @@ struct kademMachine {
     int port;
     char id[35];
     struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
+    node_details routing_table[160];
+
 };
 
 
@@ -67,20 +70,25 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 int kademSendMessage(int sockfd, struct kademMessage * message, char * addr, int port);
 
 
+/**
+ * Parses a udp packet to a kadmelia message 
+ */
 struct kademMessage kademUdpToMessage(char * udpPacket, int length);
 
 
 /**
- *  * @return int  0   success
- *   *              -1  failure
- *   */
+ *  sends a kadmelia ping request to addr, port
+ *  @return int  0   success
+ *               -1  failure
+*/
 int kademPing(struct kademMachine * machine, char * addr, int port);
 
 /**
+ *  Sends a kadmelia ping answer to addr, port
  * @return int  0   success
  *              -1  failure
 */
-int kademPong(struct kademMachine machine, struct kademMessage *message, char * addr, int port);
+int kademPong(struct kademMachine *machine, struct kademMessage *message, char * addr, int port);
 
 /**
  * @return int  0   success
@@ -106,7 +114,7 @@ int kademFindNode(struct kademMachine * machine, char * id, char *dst_addr, int 
  * @return int  0   success
  * -1  failure
  */
-int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message);
+int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message,char *addr, int port);
 
 /**
  * Called by the message listener and handle a FIND_NODE answer
@@ -132,7 +140,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char *dst_addr, 
  * @return int  0   success
  *              -1  failure
  */
-int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message);
+int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message,char *addr, int port);
 
 /**
  * Called by the message listener and handle a FIND_VALUE answer
@@ -157,7 +165,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
  * @return int  0   success
  *              -1  failure
  */
-int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message);
+int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
 
 /**
  * Called by the message listener and handle a STORE_VALUE answer
