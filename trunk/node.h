@@ -9,29 +9,34 @@
 
 
 //node_details structure
-typedef struct node_details node_details;
-struct node_details
+typedef struct _node_details node_details;
+struct _node_details
 {
     	char* ip;
 	int port;
-	int nodeID;
+	char* nodeID;
    	node_details* next;
 };
 
-// a k_bucket here is the pointer to the head of the k_bucket. 
-typedef node_details* k_bucket;
+// a node_details * here is the pointer to the head of the node_details *. 
+//typedef node_details* node_details *;
 
+typedef struct _routing_table routing_table;
+struct _routing_table{
+	node_details *table[160];
+};
 
 //Declaration of functions
 //@return: 0 node inserted 1 node rejected.
-int insert_to_tail(k_bucket bucket, node_details* node);
-node_details* create_node_details(node_details* node, char* _ip, int _port, int _nodeID);
-void print_ports(k_bucket bucket);
-k_bucket delete_head(k_bucket bucket);
-int count_nodes_details(k_bucket bucket);
-k_bucket delete_head_insert_tail(k_bucket bucket, node_details* node);
-node_details* look_for_IP(k_bucket bucket, int nodeID);
-k_bucket move_to_tail(k_bucket bucket, node_details* node);
-k_bucket move_node_details(k_bucket bucket, int nodeID, char* ip, int port);
+node_details * insert_to_tail(node_details * bucket, node_details* node);
+node_details* create_node_details(node_details* node, char* _ip, int _port, char* _nodeID);
+void print_ports(node_details * bucket);
+node_details * delete_head(node_details * bucket);
+int count_nodes_details(node_details * bucket);
+node_details * delete_head_insert_tail(node_details * bucket, node_details* node);
+node_details* look_for_IP(node_details * bucket, char* nodeID);
+node_details * move_to_tail(node_details * bucket, node_details* node);
+node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, int port);
 
-
+int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nodeID, char* ip, int port);
+int find_node_details(char* this_node, char* other_node);
