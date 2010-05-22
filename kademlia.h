@@ -142,5 +142,30 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
  */
 int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message);
 
+/**
+ * Send a STORE_VALUE request 
+ *
+ * @param string key : key to look for 
+ * @return int  0   success
+ * -1  failure
+ */
+int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port);
+
+/**
+ * Called by the message listener and handle a STORE_VALUE request
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message);
+
+/**
+ * Called by the message listener and handle a STORE_VALUE answer
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message);
+
 
 #endif

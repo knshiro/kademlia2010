@@ -343,8 +343,6 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
 
 int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message){
 
-
-
     return 0; 
 }
 
@@ -352,3 +350,49 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
 
     return 0; 
 }
+
+int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port){
+    
+    struct kademMessage message;
+    int ret;
+    json_object *header, *argument;
+    char * transactionId = "01";    //TODO create a real transactionId
+
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+    json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
+    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_VALUE));
+
+    argument = json_object_new_object();
+    json_object_object_add(argument,"id",json_object_new_string(machine->id));
+    json_object_object_add(argument,"token",json_object_new_string(token));
+    json_object_object_add(argument,"value",json_object_new_string(value));
+    json_object_object_add(argument,"numbytes",json_object_new_int(data_len));
+
+    json_object_object_add(header,"a",json_object_get(argument));
+
+    message.header = header;
+    message.payloadLength = data_len;
+    memcpy(message.payload,data,data_len); 
+
+    ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
+    json_object_put(header);
+    json_object_put(argument);
+
+    return ret;
+}
+
+int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message){
+    return 0;
+}
+
+int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message){
+    return 0;
+}
+
+
+
+
+
+
+
