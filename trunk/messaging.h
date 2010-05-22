@@ -58,6 +58,10 @@ void kdm_debug(const char *msg, ...);
 int print_routing_table(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine);
 int print_object_ids(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine);
 int ping_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node);
+int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * value, char* ip_address, int port);
+int find_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node);
+int kill_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine);
+
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -69,3 +73,4 @@ extern const char * const KADEM_STORE;
 extern const char * const KADEM_FIND_NODE;
 extern const char * const KADEM_FIND_VALUE;
 extern const char * const KADEM_PRINT_OBJECT_IDS;
+extern const char * const KADEM_KILL_NODE;
