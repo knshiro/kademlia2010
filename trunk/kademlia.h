@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "node.h"
-
+#include "store_file.h"
 
 /* max function*/
 #ifndef max
@@ -21,6 +21,7 @@
 /* Some sizes */
 #define KADEM_MAX_PAYLOAD_SIZE  4096
 #define KADEM_MAX_SEND_BUF_SIZE 8
+#define KADEM_TIMEOUT_REFRESH_DATA    5*60
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -67,7 +68,7 @@ struct kademMachine {
     char id[35];
     struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
     node_details routing_table[160];
-
+    store_file * stored_values;
 };
 
 
@@ -85,17 +86,46 @@ void kdm_debug(const char *msg, ...);
 int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p);
 
 /**
+ * 
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademMaintenance(struct kademMachine * machine);
+
+/**
+ * Functions which starts the service
+ *
+*/
+int startKademlia(struct kademMachine * machine);
+
+
+
+/*============================================
+    Communication tools
+  ============================================*/
+
+/**
  * @return int  0   success
  *              -1  failure
  */
 int kademSendMessage(int sockfd, struct kademMessage * message, char * addr, int port);
-
 
 /**
  * Parses a udp packet to a kadmelia message 
  */
 struct kademMessage kademUdpToMessage(char * udpPacket, int length);
 
+/**
+ * Sends an message containing an error
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port);
+
+
+/*============================================
+    P2P communication
+  ============================================*/
 
 /**
  *  sends a kadmelia ping request to addr, port
@@ -116,8 +146,6 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
  * -1  failure
  */
 int kademHandlePong(char * addr, int port);
-
-
 
 
 /**
@@ -196,17 +224,62 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
  */
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message);
 
+
+/*============================================
+    RPC communication
+  ============================================*/
+
 /**
- * Sends an message containing an error
+ * Called by the message listener and handle a STORE_VALUE request
+ *
  * @return int  0   success
  *              -1  failure
  */
-int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port);
+int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
 
-    
 /**
- * Functions which starts the service
  *
-*/
-int startKademlia(struct kademMachine * machine);
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+
+/**
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+/**
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+
+/**
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+/**
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+/**
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
+
+
 #endif
