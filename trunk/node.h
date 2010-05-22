@@ -23,7 +23,8 @@ typedef node_details* k_bucket;
 
 
 //Declaration of functions
-k_bucket insert_to_tail(k_bucket bucket, node_details* node);
+//@return: 0 node inserted 1 node rejected.
+int insert_to_tail(k_bucket bucket, node_details* node);
 node_details* create_node_details(node_details* node, char* _ip, int _port, int _nodeID);
 void print_ports(k_bucket bucket);
 k_bucket delete_head(k_bucket bucket);
