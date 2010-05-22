@@ -17,7 +17,7 @@ all:   kademlia
 test :   test_kademlia.o kademlia.o md5.o 
 	${CC} -o $@ $^ ${LIBS}
 
-kademlia:    main_kademlia.o kademlia.o md5.o
+kademlia:    main_kademlia.o kademlia.o md5.o store_file.o 
 	${CC} -o $@ $^ ${LIBS}
 
 messaging: messaging.o utils.o md5.o

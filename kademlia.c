@@ -61,7 +61,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     unsigned int buf_len;
     char signature[128];
     char id[36]; 
-
+    
 
 
     //####################################
@@ -492,15 +492,23 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
 int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message,char * addr, int port){
     struct kademMessage answer_message;
     int ret;
-    json_object *header, *response;
+    json_object *header, *response, *query_argument;
     const char * transactionId;
+    char *value, *key;
+    
+    query_argument = json_object_object_get(message->header,"a");
+
+    //TODO fix payload + create_store_file
+    key = json_object_get_string(json_object_object_get(query_argument,"value"));
+    value = message->payload;
+    machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value));
+
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
 
-    //TODO try to store the value 
 
     json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
@@ -551,6 +559,14 @@ int kademSendError(struct kademMachine * machine, char *transactionId, char *cod
 
 }
 
+int kademMaintenance(struct kademMachine * machine){
+    
+    //TODO refresh the k-buckets
+    //TODO refresh the files stored
+    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
+        
+    return 0;
+}
 
 int startKademlia(struct kademMachine * machine){
     int ret_select, num_read,from_port;
