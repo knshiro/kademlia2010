@@ -15,7 +15,7 @@
 
 // Insert a node_details to the tail of the bucket.
 // Return the pointer to the head of the k_bucket (i.e. a struct k_bucket).
-k_bucket insert_to_tail(k_bucket bucket, node_details* node){
+int insert_to_tail(k_bucket bucket, node_details* node){
 
 
 	//Go through the k_bucket to check if it is full
@@ -29,12 +29,12 @@ k_bucket insert_to_tail(k_bucket bucket, node_details* node){
 
    	if(bucket == NULL){
         	//The k_bucket is empty, so we only need to return.
-        	return node;
+        	return 0;
     	 }
     	else if(i>6){
 		//If it is already full, return bucket. How to notify it is full?
 		printf("The k_bucket is already full.\n");
-		return bucket;
+		return 1;
 	}
    	else{
 		//Go through the bucket until the end and add the new element there.
@@ -44,7 +44,7 @@ k_bucket insert_to_tail(k_bucket bucket, node_details* node){
         	}
         	temp->next = node;
 
-        	return bucket;
+        	return 0;
     	} 
 }
 
@@ -111,9 +111,9 @@ int count_nodes_details(k_bucket bucket) {
 
 //Function that deletes the least recently seen node of the k_bucket (the head) and add the new one (at the tail)
 k_bucket delete_head_insert_tail(k_bucket bucket, node_details* node){
-	
+	int n;
 	bucket = delete_head(bucket);
-	bucket = insert_to_tail(bucket, node);
+	n = insert_to_tail(bucket, node);
 	
 	return bucket;
 }
@@ -139,7 +139,7 @@ node_details* look_for_IP(k_bucket bucket, int nodeID){
 
 //Move an element from the list at the tail
 k_bucket move_to_tail(k_bucket bucket, node_details* node){
-	
+	int n;
 	node_details* temp = bucket;
 	while(temp->next != node){
 		temp = temp->next;
@@ -147,7 +147,7 @@ k_bucket move_to_tail(k_bucket bucket, node_details* node){
 
 	temp->next = node->next;
 	node->next = NULL;
-	bucket = insert_to_tail(bucket, node);
+	n = insert_to_tail(bucket, node);
 	
 	return bucket;
 }
@@ -157,7 +157,7 @@ k_bucket move_to_tail(k_bucket bucket, node_details* node){
 //Put the node_details at the right place in the k_bucket
 //after receiving a message from that node.
 k_bucket move_node_details(k_bucket bucket, int nodeID, char* ip, int port){
-
+int n;
 	node_details* temp = NULL;
 
 	temp = look_for_IP(bucket, nodeID);
@@ -174,7 +174,7 @@ k_bucket move_node_details(k_bucket bucket, int nodeID, char* ip, int port){
 		if(i<6)	{
 			temp = NULL;
 			temp = create_node_details(temp, ip, port, nodeID);
-			bucket = insert_to_tail(bucket, temp);
+			n = insert_to_tail(bucket, temp);
 			return bucket;
 		}
 		//If the bucket is full, ping the least recently seen to see if it is still here.
@@ -188,7 +188,7 @@ k_bucket move_node_details(k_bucket bucket, int nodeID, char* ip, int port){
 				bucket = delete_head(bucket);
 				temp = NULL;
 				temp = create_node_details(temp, ip, port, nodeID);
-				bucket = insert_to_tail(bucket, temp);
+				n = insert_to_tail(bucket, temp);
 				return bucket;
 			}
 		}
