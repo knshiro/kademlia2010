@@ -10,14 +10,32 @@
 
 
 /* Message types */
-const char * const KADEM_QUERY      =    "q";                                        
-const char * const KADEM_ANSWER     =    "r";                                        
-            
-/*Message query types */
-const char * const KADEM_PING       =    "ping";                                     
-const char * const KADEM_STORE      =    "put";                                      
-const char * const KADEM_FIND_NODE  =    "find_node";                                
-const char * const KADEM_FIND_VALUE =    "get";  
+const char * const KADEM_QUERY      =    "q";
+const char * const KADEM_ANSWER     =    "r";
+const char * const KADEM_ERROR      =    "e";
+
+
+/* Message query types */
+const char * const KADEM_PING       =    "ping";
+const char * const KADEM_STORE      =    "put";
+const char * const KADEM_FIND_NODE  =    "find_node";
+const char * const KADEM_FIND_VALUE =    "get";
+
+/* Message error codes */
+const char * const KADEM_ERROR_GENERIC          =    "201";
+const char * const KADEM_ERROR_INVALID_TOKEN    =    "202";
+const char * const KADEM_ERROR_PROTOCOL         =    "203";
+const char * const KADEM_ERROR_METHOD_UNKNOWN   =    "204";
+const char * const KADEM_ERROR_STORE            =    "205";
+
+/* Message error values */
+const char * const KADEM_ERROR_GENERIC_VALUE          =    "Generic Error";
+const char * const KADEM_ERROR_INVALID_TOKEN_VALUE    =    "Invalid Token";
+const char * const KADEM_ERROR_PROTOCOL_VALUE         =    "Protocol Error";
+const char * const KADEM_ERROR_METHOD_UNKNOWN_VALUE   =    "Method Unknown Error";
+const char * const KADEM_ERROR_STORE_VALUE            =    "Unable to store data";
+
+
 
 
 void kdm_debug(const char *msg, ...){
@@ -34,7 +52,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     int sockfd;
     struct sockaddr_in local_rpc_addr, p2p_addr;
     int length = sizeof(struct sockaddr_in);
-   
+
     char hostname[100]; 
     char buffer[20];
     char port_str[6];
@@ -49,7 +67,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     //####################################
     // Create first socket for local RPC #
     //####################################
-    
+
     // Create socket
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0){ 
@@ -67,7 +85,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     // Give any address and listen to the specified port
     local_rpc_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     local_rpc_addr.sin_port = htons(port_local_rpc);
-    
+
     if(bind(sockfd,(struct sockaddr *)&local_rpc_addr,length) == -1) {
         perror("Impossible to bind socket to local address\n");
         close(sockfd);
@@ -96,13 +114,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     // Give any address and listen to the specified port
     p2p_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     p2p_addr.sin_port = htons(port_p2p);
-    
+
     if(bind(sockfd,(struct sockaddr *)&p2p_addr,length) == -1) {
         perror("Impossible to bind socket to local address\n");
         close(sockfd);
         return -1;
     }
-    
+
     //#######################################
     // Creation of the id                   #
     //#######################################
@@ -112,7 +130,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     kdm_debug("Host name : %s\n",hostname);
     server = gethostbyname(hostname);
     kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
-   
+
     //Create the string id 
     strcpy(buffer,inet_ntoa(*((struct in_addr *)server->h_addr)));
     strcat(buffer,"/");
@@ -135,11 +153,11 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
 
     int messageSize = 0, sentBytes = 0;
     char *udpPacket;
-    char *header; 
+    const char *header; 
     struct sockaddr_in serv_addr; 
     struct hostent *server;
-    
-    
+
+
     //###############################
     // Find the address of the peer #
     //###############################
@@ -151,7 +169,7 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
         exit(0);
     }
     kdm_debug("Name resolved\n");
-    
+
     // Zero out server address - IMPORTANT!
     bzero((char *) &serv_addr, sizeof(serv_addr));
     // Set address type to IPv4 */
@@ -168,40 +186,44 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
     //###############################
     // Create the data to be sent   #
     //###############################
- 
+
     //First the header
     header = json_object_to_json_string(message->header);
     messageSize += strlen(header);
     kdm_debug("Header sent:\n%s\n",header);
-    
+
     //If needed include a payload
     if(message->payloadLength>0){
         if(message->payloadLength> KADEM_MAX_PAYLOAD_SIZE){
             fprintf(stderr,"Payload too big to be sent (%d bytes)\n", message->payloadLength);
             return 1;
         }
-        udpPacket = (char *) malloc(messageSize + message->payloadLength);
+        udpPacket = (char *) malloc(messageSize + message->payloadLength+1);
         memcpy(udpPacket,header,messageSize);
         memcpy(udpPacket+messageSize,message->payload,message->payloadLength);
+        udpPacket[messageSize + message->payloadLength] = '\0';
         messageSize += message->payloadLength;
     }
     else{
-        udpPacket = header;
+        udpPacket = (char *) malloc(messageSize + 1);
+        memcpy(udpPacket,header,messageSize);
+        udpPacket[messageSize] = '\0';
     }
 
 
     //###############################
     // Write message to socket      #
     //###############################
-    
+
     if((sentBytes = sendto(sockfd, udpPacket, messageSize , 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0)
     {
         perror("Could not send packet!");
         return -1;
     }
     kdm_debug("Packet sent %d bytes (%d header, %d payload)\n", sentBytes, strlen(header),message->payloadLength);
-    
     kdm_debug("%s\n", udpPacket);
+    free(udpPacket);
+
     return 0; 
 }
 
@@ -221,12 +243,12 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length){
 }
 
 int kademPing(struct kademMachine * machine, char * addr, int port){
-    
+
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
     char * transactionId = "01";    //TODO create a real transactionId
-   
+
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
@@ -238,7 +260,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
 
     message.header = header;
     message.payloadLength = 0;
-    
+
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
     json_object_put(header);
     json_object_put(argument);
@@ -248,12 +270,15 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
 }
 
 int kademPong(struct kademMachine *machine, struct kademMessage *message, char * addr, int port){
-    
+
     struct kademMessage answer_message;
     int ret;
     json_object *header, *response;
-    char * transactionId = "01";    //TODO create a real transactionId
-   
+    const char * transactionId; 
+
+    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
+
+
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
@@ -264,7 +289,7 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
 
     answer_message.header = header;
     answer_message.payloadLength = 0;
-    
+
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
@@ -281,12 +306,12 @@ int kademHandlePong(char * addr, int port){
 }
 
 int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, int port){
-    
+
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
     char * transactionId = "01";    //TODO create a real transactionId
-   
+
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
@@ -300,7 +325,7 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
 
     message.header = header;
     message.payloadLength = 0;
-    
+
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
     json_object_put(header);
     json_object_put(argument);
@@ -314,8 +339,11 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     struct kademMessage answer_message;
     int ret;
     json_object *header, *response, *response_array;
-    char * transactionId = "01";    //TODO create a real transactionId
-   
+    const char * transactionId; 
+
+    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
+
+
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
@@ -332,7 +360,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
 
     answer_message.header = header;
     answer_message.payloadLength = 0;
-    
+
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
@@ -384,8 +412,10 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     struct kademMessage answer_message;
     int ret;
     json_object *header, *response, *node_array;
-    char * transactionId = "01";    //TODO create a real transactionId
+    const char * transactionId; 
     char * token = "tokenabc1";     //TODO create a real token
+
+    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -394,9 +424,9 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     response = json_object_new_object();
     json_object_object_add(response,"id",json_object_new_string(machine->id));
     json_object_object_add(response,"token",json_object_new_string(token));
-    
+
     answer_message.payloadLength = 0;
-    
+
     //TODO look for value
     if(1){
 
@@ -409,7 +439,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
         node_array = json_object_new_array();
         //TODO Fill with value
         json_object_object_add(response,"nodes",json_object_get(node_array));
-        
+
     }
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
@@ -429,7 +459,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
 }
 
 int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port){
-    
+
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
@@ -460,13 +490,18 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
 }
 
 int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message,char * addr, int port){
-     struct kademMessage answer_message;
+    struct kademMessage answer_message;
     int ret;
     json_object *header, *response;
-    char * transactionId = "01";    //TODO create a real transactionId
-   
+    const char * transactionId;
+
+    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
+
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
+
+    //TODO try to store the value 
+
     json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
     response = json_object_new_object();
@@ -475,11 +510,10 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
 
     answer_message.header = header;
     answer_message.payloadLength = 0;
-    
+
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
-
 
     return ret;
 
@@ -489,9 +523,140 @@ int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessa
     return 0;
 }
 
+int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port){
+
+    struct kademMessage error_message;
+    int ret;
+    json_object *header, *error;
+
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+
+    json_object_object_add(header, "y",json_object_new_string(KADEM_ERROR));
+
+    error = json_object_new_object();
+    json_object_object_add(error,"code",json_object_new_string(code));
+    json_object_object_add(error,"value",json_object_new_string(message));
+
+    json_object_object_add(header, KADEM_ERROR,json_object_get(error));
+
+    error_message.header = header;
+    error_message.payloadLength = 0;
+
+    ret = kademSendMessage(machine->sock_p2p, &error_message, addr, port);
+    json_object_put(header);
+    json_object_put(error);
+
+    return ret;
+
+}
 
 
+int startKademlia(struct kademMachine * machine){
+    int ret_select, num_read,from_port;
+    socklen_t from_len;
+    fd_set readfds;
+    struct timeval tv;
+    struct kademMessage message;
+    struct sockaddr_in from;
+    char udpPacket[KADEM_MAX_PAYLOAD_SIZE+100];
+    const char * buffer;
+    char * from_addr;
 
 
+    from_len = sizeof(struct sockaddr_in);
+
+    while(1){
+
+        // clear the set ahead of time
+        FD_ZERO(&readfds);
+        // add our descriptors to the set
+        FD_SET(machine->sock_local_rpc,&readfds);
+        FD_SET(machine->sock_p2p,&readfds);
+
+        // Set timeout
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        ret_select = select(max(machine->sock_local_rpc, machine->sock_p2p)+1, &readfds, NULL, NULL, &tv);
+        //If there is an error just quit
+        if(ret_select <0){
+            perror("Select :");
+            return 1;
+        }
+        //If timed out do refreshing functions
+        else if (ret_select == 0){
+        }
+        //If received a message
+        else{
+
+            //#####################################
+            // Messages from local rpc            #
+            //#####################################
+            if(FD_ISSET(machine->sock_local_rpc, &readfds)) {
+                if((num_read = recvfrom(machine->sock_local_rpc,udpPacket,sizeof(udpPacket),0,(struct sockaddr*) &from, &from_len)) < 0)
+                {
+                    perror("Couldnt' receive from socket");
+                }
+                message = kademUdpToMessage(udpPacket,num_read);
+            }
 
 
+            //#####################################
+            // Messages from kademlia p2p network #
+            //#####################################
+            if(FD_ISSET(machine->sock_p2p, &readfds)) {
+                if((num_read = recvfrom(machine->sock_p2p,udpPacket,sizeof(udpPacket),0,(struct sockaddr*) &from, &from_len)) < 0)
+                {
+                    perror("Couldnt' receive from socket");
+                }
+                message = kademUdpToMessage(udpPacket,num_read);
+
+                // Retrieve ip and port from sending node
+                from_port = ntohs(from.sin_port);
+                from_addr = inet_ntoa(from.sin_addr);                
+                kdm_debug("Receve message from: %s (%d)\n",from_addr,from_port);
+
+                // Determine the type of the message 
+                buffer = json_object_get_string(json_object_object_get(message.header,"y"));
+                // Message is a query
+                if (strcmp(buffer,KADEM_QUERY) == 0){
+
+                    // Determine the type of the query
+                    buffer = json_object_get_string(json_object_object_get(message.header,KADEM_QUERY));
+
+                    if (strcmp(buffer,KADEM_PING) == 0){
+                        kademPong(machine, &message, from_addr, from_port);  
+                    }                
+                    if (strcmp(buffer,KADEM_STORE) == 0){
+                        kademHandleStoreValue(machine, &message, from_addr, from_port);  
+                    }                
+                    if (strcmp(buffer,KADEM_FIND_NODE) == 0){
+                        kademHandleFindNode(machine, &message, from_addr, from_port);  
+                    }                
+                    if (strcmp(buffer,KADEM_FIND_VALUE) == 0){
+                        kademHandleFindValue(machine, &message, from_addr, from_port);  
+                    }                
+
+                }
+
+
+                // Message is an answer
+                else if (strcmp(buffer,KADEM_ANSWER) == 0){
+                }
+
+
+                // Message is an error
+                else if (strcmp(buffer,KADEM_ERROR) == 0){
+                }
+
+                // Message type is unknown
+                else{
+                }
+            }
+        }
+    }
+
+    return 0;
+
+}

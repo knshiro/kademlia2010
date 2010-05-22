@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
     json_object *header, *argument;
     struct kademMessage message;
     char udpPacket[400];
-    char * transactionId = "01";
+    char * transactionId = "04";
     char * addr = "127.0.0.1";
     int port = 4000;
 
@@ -76,7 +76,13 @@ int main(int argc, char *argv[]){
     kademStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
     kdm_debug("<<<<Store value\n\n");
 
-
-
+   /* kdm_debug(">>>>Store value\n");
+    kademHandleStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
+    kdm_debug("<<<<Store value\n\n");*/
+    
+    kdm_debug(">>>>Send error\n");
+    kademSendError(&machine,"trans1",KADEM_ERROR_GENERIC,KADEM_ERROR_GENERIC_VALUE,addr,port);
+    kdm_debug("<<<<Send error\n\n");
+    
     return 0;
 }
