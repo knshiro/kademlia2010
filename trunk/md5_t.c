@@ -9,6 +9,7 @@
 int	main(int argc, char **argv){
     char * test; 
     const char* buffer = "1244.33555.";
+    
     char array[20]; 
     const unsigned int buf_len = strlen(buffer);
     char* signature= (char*)malloc(128*sizeof(char));

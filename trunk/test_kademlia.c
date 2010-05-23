@@ -44,6 +44,8 @@ int main(int argc, char *argv[]){
     printf("Payload is %s\n", message.payload);
 
     generateTransactionId(hash,machine.id);
+    printf("Transaction id is %s\n", hash);
+    
 
     //###############################
     // End  Test of udpToMessage    #
