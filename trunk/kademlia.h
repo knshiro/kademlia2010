@@ -21,6 +21,7 @@
 /* Some sizes */
 #define KADEM_MAX_PAYLOAD_SIZE          4096
 #define KADEM_MAX_SEND_BUF_SIZE         8
+#define KADEM_MAX_NB_TOKEN              50
 #define HASH_STRING_LENGTH              32+1
 #define HASH_SIGNATURE_LENGTH           16
 
@@ -74,7 +75,8 @@ struct kademMachine {
     int port;
     char id[HASH_STRING_LENGTH];
     struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
-    node_details routing_table[160];
+    char tokens[KADEM_MAX_NB_TOKEN][HASH_STRING_LENGTH];
+    routing_table routes;
     store_file * stored_values;
 };
 
