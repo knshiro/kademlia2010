@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
     struct kademMachine machine;
     json_object *header, *argument;
     struct kademMessage message;
-    char udpPacket[400];
+    char udpPacket[400], hash[HASH_STRING_LENGTH];
     char * transactionId = "04";
     char * addr = "127.0.0.1";
     int port = 4000;
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]){
     printf("Payload has the good size : %i\n", message.payloadLength == 7);
     printf("Payload is %s\n", message.payload);
 
+    generateTransactionId(hash,machine.id);
 
     //###############################
     // End  Test of udpToMessage    #
