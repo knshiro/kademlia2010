@@ -513,6 +513,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     answer_message.payloadLength = 0;
 
+    node_array = json_object_new_array();
     //TODO look for value
     if(1){
 
@@ -522,7 +523,6 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     }
     else {
-        node_array = json_object_new_array();
         //TODO Fill with value
         json_object_object_add(response,"nodes",json_object_get(node_array));
 
@@ -580,15 +580,25 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
 
 int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message,char * addr, int port){
     struct kademMessage answer_message;
-    int ret;
+    int ret,found = 0,i=0;
     json_object *header, *response, *query_argument;
-    const char * transactionId;
+    const char *transactionId, *token;
     char *value, *key;
     
     query_argument = json_object_object_get(message->header,"a");
+    
+    token = json_object_get_string(json_object_object_get(query_argument,"token"));
 
     //TODO verify if token exists
-
+    while(!found && i<KADEM_MAX_NB_TOKEN){
+        if(strcmp(machine->tokens[i],token) == 0){
+            found = 1;
+            strcpy(machine->tokens[i],"");
+        }
+        else{
+            i++;
+        }
+    }
 
     //TODO fix payload + create_store_file
     key = json_object_get_string(json_object_object_get(query_argument,"value"));
