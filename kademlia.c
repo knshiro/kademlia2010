@@ -326,7 +326,10 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * transactionId = "01";    //TODO create a real transactionId
+    char transactionId[HASH_SIGNATURE_LENGTH]; 
+
+    generateTransactionId(transactionId,machine->id);
+
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -389,7 +392,9 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * transactionId = "01";    //TODO create a real transactionId
+    char transactionId[HASH_SIGNATURE_LENGTH]; 
+
+    generateTransactionId(transactionId,machine->id);
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -418,7 +423,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     struct kademMessage answer_message;
     int ret;
     json_object *header, *response, *response_array;
-    const char * transactionId; 
+    const char * transactionId;
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
@@ -460,8 +465,10 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * transactionId = "01";    //TODO create a real transactionId
     char * token = "tokenabc1";     //TODO create a real token
+    char transactionId[HASH_SIGNATURE_LENGTH]; 
+
+    generateTransactionId(transactionId,machine->id);
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -527,6 +534,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
+    json_object_put(node_array);
 
     return ret;
 
@@ -542,7 +550,9 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * transactionId = "01";    //TODO create a real transactionId
+    char transactionId[HASH_SIGNATURE_LENGTH]; 
+
+    generateTransactionId(transactionId,machine->id);
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -576,6 +586,9 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
     char *value, *key;
     
     query_argument = json_object_object_get(message->header,"a");
+
+    //TODO verify if token exists
+
 
     //TODO fix payload + create_store_file
     key = json_object_get_string(json_object_object_get(query_argument,"value"));

@@ -21,9 +21,14 @@
 /* Some sizes */
 #define KADEM_MAX_PAYLOAD_SIZE          4096
 #define KADEM_MAX_SEND_BUF_SIZE         8
-#define KADEM_TIMEOUT_REFRESH_DATA      5*60
 #define HASH_STRING_LENGTH              32+1
 #define HASH_SIGNATURE_LENGTH           16
+
+/*Timeouts*/
+#define KADEM_TIMEOUT_REFRESH_DATA      5*60
+#define KADEM_TIMEOUT_REFRESH_ROUTE     5*60
+#define KADEM_NB_TIMEOUT_REFRESH_ROUTE  2
+
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -82,6 +87,11 @@ void kdm_debug(const char *msg, ...);
 
 
 /**
+ *
+ * @param machine Struct kademMachine that host the machine in memory
+ * @param port_local_rpc Number of the port to which the local rpc socket will be binded
+ * @param port_p2p Number of the port to which the kademlia p2p socket will be binded
+ * 
  * @return int  0   success
  *              -1  failure
  */
