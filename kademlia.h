@@ -107,6 +107,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 int kademMaintenance(struct kademMachine * machine);
 
 /**
+ * Find a message by transaction id in the message buffer
+ * @return int  0   success
+ *              -1  failure
+ */
+struct kademMessage* findMessageByTransactionId(struct kademMachine * machine, char * transactionId);
+
+/**
  * Functions which starts the service
  *
 */
@@ -168,7 +175,7 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
  * @return int  0   success
  * -1  failure
  */
-int kademHandlePong(char * addr, int port);
+int kademHandlePong(struct kademMachine *machine, struct kademMessage *message);
 
 
 /**
