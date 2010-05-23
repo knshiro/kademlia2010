@@ -15,6 +15,7 @@ struct _node_details
     	char* ip;
 	int port;
 	char* nodeID;
+	time_t timestamp;
    	node_details* next;
 };
 
