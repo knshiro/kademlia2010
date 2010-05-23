@@ -146,7 +146,7 @@ char* message = (char*)malloc(400*sizeof(char));
     				json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
 
 					message.header = header;
-					message.payloadLength = payload_len;
+					message.payloadLength = leng;
 					strcpy(message.payload,payload);
 					header2 = json_object_to_json_string(message.header);
 					
