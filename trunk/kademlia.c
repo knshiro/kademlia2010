@@ -161,6 +161,22 @@ int kademMaintenance(struct kademMachine * machine){
     return 0;
 }
 
+struct kademMessage* findMessageByTransactionId(struct kademMachine * machine, char * transactionId){
+    struct kademMessage* result = NULL;
+    const char * buffer;
+    int found =0,i=0;
+    while(!found && i<KADEM_MAX_PAYLOAD_SIZE){
+       buffer = json_object_get_string(json_object_object_get(machine->messageBuffer[i].header,"t")); 
+        if(strcmp(buffer,transactionId)==0){
+            result = &machine->messageBuffer[i];
+            found = 1;
+        }
+        else{
+            i++;
+        }
+    }    
+    return result;
+}
 
 /*============================================
     Communication tools
@@ -383,7 +399,7 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
 
 }
 
-int kademHandlePong(char * addr, int port){
+int kademHandlePong(struct kademMachine *machine, struct kademMessage *message){
 
 
     return 0; 
