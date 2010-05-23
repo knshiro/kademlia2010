@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include "node.h"
 #include <time.h>
 
 /* Message types */
@@ -812,7 +813,8 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
 	//TODO: print routing table.
-	//OU est-elle?
+	int check = -1;
+	check = print_routing_table(machine->routes);
 		
 	struct kademMessage answer_message;
 	json_object *header, *argument;
@@ -839,7 +841,7 @@ int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessag
 
 int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: print objects
+	//TODO: print objects	
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
