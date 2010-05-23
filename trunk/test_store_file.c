@@ -66,10 +66,12 @@ int main(void)
 
     printFiles(file1);
 
-	file1 = clean(file1, 1);
+	//file1 = clean(file1, 1);
 	
     printFiles(file1);
     printf("value: %s\n", file1->value);
+
+	print_values(file1);
 
 	/* Test delete function
 	while(1)

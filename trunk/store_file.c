@@ -204,3 +204,16 @@ void printFiles(stored_values values)
     printf("NULL\n");
 }
 
+int print_values(stored_values values)
+{
+	stored_values temp = values;
+	while (temp != NULL)
+	{
+		printf("Key: %s  ;  Value: %s\n", temp->key,temp->value);
+		temp = temp->next;
+	}
+return 0;
+}
+
+
+

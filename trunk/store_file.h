@@ -31,3 +31,5 @@ stored_values delete_head_file(stored_values stored_values);
 stored_values clean(stored_values values, int age);
 store_file* find_key(stored_values values, char* key);
 void printFiles(stored_values values);
+int print_values(stored_values values);
+

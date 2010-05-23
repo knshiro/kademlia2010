@@ -7,8 +7,10 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include "store_file.h"
 #include "node.h"
 #include <time.h>
+
 
 /* Message types */
 const char * const KADEM_QUERY      =    "q";
@@ -841,7 +843,8 @@ int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessag
 
 int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: print objects	
+	int i;
+	i = print_values(machine->stored_values);
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
