@@ -9,6 +9,7 @@
 #include "node.h"
 #include "XORmetrics.h"
 #include "md5.h"
+#include <time.h>
 
 
 
@@ -29,6 +30,7 @@ node_details * insert_to_tail(node_details * bucket, node_details* node){
 
    	if(bucket == NULL){
         	//The node_details * is empty, so we only need to return.
+		node->timestamp = time (NULL);
         	return node;
     	}
     	else if(i>6){
@@ -38,6 +40,7 @@ node_details * insert_to_tail(node_details * bucket, node_details* node){
 	}
    	else{
 		//Go through the bucket until the end and add the new element there.
+		node->timestamp = time (NULL);
         	temp = bucket;
         	while(temp->next != NULL){
            		temp = temp->next;
@@ -75,6 +78,9 @@ node_details* create_node_details(node_details* node, char* _ip, int _port, char
 	node->ip = _ip;
 	node->port = _port;
 	node->nodeID = _nodeID;
+	time_t _timestamp;
+    	_timestamp = time (NULL);
+	node->timestamp = _timestamp;
 	node->next = NULL;
 
 	return node;
