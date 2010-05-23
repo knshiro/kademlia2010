@@ -1,3 +1,6 @@
+#ifndef STORE_FILE_H
+#define STORE_FILE_H
+
 #include <sys/select.h>
 #include <stdio.h>
 #include <netdb.h>
@@ -33,3 +36,5 @@ store_file* find_key(stored_values values, char* key);
 void printFiles(stored_values values);
 int print_values(stored_values values);
 
+
+#endif
