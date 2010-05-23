@@ -118,11 +118,15 @@ char buf_send2[40];
 char buf2[400];
 struct timeval tv;
 tv.tv_sec = 0;
-int srv, leng_name, k;
+struct timeval tv2;
+tv2.tv_sec = 2;
+struct kademMessage message_from_dht;
+int srv, srv2, leng_name, k;
 char* to_ID=(char*)malloc(10*sizeof(char));
 char* ID=(char*)malloc(10*sizeof(char));
 char* delims = (char*)malloc(10*sizeof(char));
 char* message = (char*)malloc(400*sizeof(char));
+char* message2 = (char*)malloc(400*sizeof(char));
 
 FD_ZERO(&readfds);
 FD_SET(cpcb.sockfd, &readfds);
@@ -161,6 +165,9 @@ while(1){
 			fgets(buf_send, sizeof(buf_send), stdin);
 			int leg = strlen(buf_send);
 			strncpy(buf_send2,buf_send,leg-1);
+			bzero(message, sizeof(message));
+			bzero(message2, sizeof(message2));
+			
 
 			if(strcmp(buf_send2,"//print_table")==0){
 				if(print_routing_table(&cpcb, &dhtmachine)>0){
@@ -188,7 +195,7 @@ while(1){
 						printf("kill_node sent!\n");
 					}
 					bzero(buf_send2, sizeof(buf_send2));
-				}
+				}/*
 				else if(strcmp(strtok(buf_send2," "),"//get")==0){
 					char get_[40];
 					strcpy(get_,buf_send2+6);
@@ -197,7 +204,7 @@ while(1){
 					}
 					bzero(buf_send2, sizeof(buf_send2));
 					bzero(get_, sizeof(get_));
-				}
+				}*/
 				else if(strcmp(buf_send2,"//find_node")==0){
 					char find[40];
 					strcpy(find,buf_send2+12);
@@ -207,23 +214,55 @@ while(1){
 					bzero(buf_send2, sizeof(buf_send2));
 					bzero(find, sizeof(find));
 				}
+				//Send a GET to the DHT. Receive the address and port of the node. Send a message to a node. 
 				else{
+					bzero(ID, sizeof(ID));
+					
+					//ID: id of the node. message: message to send to the node.
 					strcpy(buf2,buf_send);					
 					delims = " ";
 					to_ID = strtok(buf_send,delims);
 					//printf("to_ID: %s\n",to_ID);
+					printf("test");
 					leng_name = strlen(to_ID)-3;
-					//printf("leng_name: %i\n",leng_name);
 					if(leng_name<1){
 						exit(-1);
 					}
 					strncpy(ID,to_ID+3,leng_name);
- 					
+
 					strcpy(message,buf2+leng_name+4);
-					//printf("message: %s\n\n",message);
+					strcat(message2,"from:");
+					strcat(message2,login);
+					strcat(message2," ");
+					strcat(message2,message);
+					
+					//send a GET to the DHT with the ID of the node.
+ 					if(get(&cpcb,&dhtmachine,ID)>0){
+						printf("Get sent!\n");
+					}
+					srv2 = select(cpcb.sockfd+1, &readfds, NULL, NULL, &tv2);
+					//printf("srv2: %i\n", srv2);
+					if (srv2 == -1) {
+						perror("select"); // error occurred in select()
+					} 
+					else if(srv2 == 0) {
+						printf("No answer from the DHT\n");
+					}
+					else{
+						if(FD_ISSET(cpcb.sockfd, &readfds)) {
+							bzero(buf_rec, sizeof(buf_rec));
+							if((numread = recvfrom(cpcb.sockfd,buf_rec,sizeof(buf_rec), 0, (struct sockaddr*)&from, &fromlen)) < 0){
+								error("Couldnt' receive from socket");	
+							}
+							printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
+							//extract IP address and Port.
+							message_from_dht = kademUdpToMessage(buf_rec, sizeof(buf_rec));
+							printf("ip from new node: %s\n",message_from_dht.payload);
+						}
+					}
 					//changer sockaddr pour envoyer.
 					//envoyer le resultat.*/
-					if(sendto(sockfd, message, strlen(message), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
+					if(sendto(sockfd, message2, strlen(message2), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
 						error("Couldnt' send");
 					}
 						
@@ -256,10 +295,10 @@ int print_routing_table(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmach
     	printf("message: %s\n",header2);	
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
 
@@ -283,10 +322,10 @@ int print_object_ids(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine
     	printf("message: %s\n",header2);	
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
 
@@ -315,10 +354,10 @@ int ping_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char*
     	printf("message: %s\n",header2);	
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
 
@@ -341,10 +380,10 @@ int kill_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine){
     	printf("message: %s\n",header2);	
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
 
@@ -385,12 +424,13 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
     	printf("message: %s\n",header2);
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
+//Find value.
 int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
 
 	char* header2;
@@ -445,10 +485,10 @@ int find_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char*
     	printf("message: %s\n",header2);	
 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
-		return 0;
+		return -1;
 	}
 
-return 1;
+return 0;
 }
 
 
