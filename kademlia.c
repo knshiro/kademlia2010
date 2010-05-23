@@ -11,7 +11,6 @@
 #include "store_file.h"
 #include <time.h>
 
-
 /* Message types */
 const char * const KADEM_QUERY      =    "q";
 const char * const KADEM_ANSWER     =    "r";
@@ -760,7 +759,7 @@ int startKademlia(struct kademMachine * machine){
 
 int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: store the value.
+	//TODO: store the value (into the routing_table?).
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
@@ -787,7 +786,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: do the ping.
+	//TODO: do the ping
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
@@ -814,7 +813,7 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 
 int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: print routing table.
+	//TOTEST: print routing table.
 	int check = -1;
 	check = print_routing_table(machine->routes);
 		
@@ -843,8 +842,9 @@ int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessag
 
 int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	int i;
-	i = print_values(machine->stored_values);
+	//TOTEST: print objects	
+	int check = -1;
+        check = print_routing_table(machine->routes);
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
@@ -870,21 +870,24 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
 
 int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 	
-	//TODO: find the appropriate IP address and port.
-	char* ip_address_to_send;
-	int port_to_send;
+	//TOTEST: look for the appropriate IP address and port into the store_files.
+	char* value=(char*)malloc(30);
+	char * temp=(char*)malloc(30);
+	
+	//look for value into the header of message.
+	json_object *argument2;
+	argument2 = json_object_object_get(message->header,"a");
+	temp = json_object_get_string(json_object_object_get(argument2,"value"));
 
+	store_file * result;
+	result = find_key(machine->stored_values, temp);
+	value = result->value;
 
 	//create the payload: "ip_address/port":
 	char* ok = "OK";
-	char payload[4000];
 	char leng_payload[5];
-	strcat(payload, ip_address_to_send);
-	strcat(payload,"/");
-	strcat(payload,port_to_send);
-	int leng = strlen(payload);
+	int leng = strlen(value);
 	sprintf(leng_payload,"%d",leng); 
-	printf("payload: %s, size=%i\n",payload,leng);
 	
 	char* header2;
 
@@ -901,7 +904,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
     	json_object_object_add(header,"r",json_object_get(argument));
 
 	answer_message.header = header;
-	strcpy(answer_message.payload,payload);
+	strcpy(answer_message.payload,value);
 	kdm_debug("message.payload: %s\n",answer_message.payload);
 	answer_message.payloadLength = leng;
 
@@ -918,9 +921,8 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 
 
 int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
-
-	//TODO: kill_node
 		
+	//TOTEST
 	struct kademMessage answer_message;
 	json_object *header, *argument;
 	char* ok = "OK";
@@ -939,7 +941,7 @@ int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * messa
 		return -1;
 	}
 	
-	return 0;
+	exit(0);
 }
 
 
