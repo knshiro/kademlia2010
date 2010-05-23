@@ -1,3 +1,6 @@
+#ifndef NODE_H
+#define NODE_H
+
 #include <sys/select.h>
 #include <stdio.h>
 #include <netdb.h>
@@ -41,3 +44,5 @@ node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, 
 
 int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nodeID, char* ip, int port);
 int find_node_details(char* this_node, char* other_node);
+
+#endif
