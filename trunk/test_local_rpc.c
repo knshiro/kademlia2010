@@ -124,14 +124,14 @@ char* message = (char*)malloc(400*sizeof(char));
 						{
 							error("Couldnt' receive from socket");	
 						}
-					printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
+					printf("Message received from %s on port %i:\n",inet_ntoa(from.sin_addr),from.sin_port);
 					printf("%s\n",buf_rec); 
 					
 					//Socket-> Answer
 					struct kademMessage message;
 					json_object *header, *argument;
 					char* payload = malloc(400*sizeof(char));
-					payload = "127.0.0.1/4200";	
+					payload = "127.0.0.1/2200";	
 					int leng = strlen(payload);
 					char payload_len[5];
 					sprintf(payload_len,"%d",leng);

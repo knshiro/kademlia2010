@@ -86,7 +86,6 @@ struct rtlp_client_pcb cpcb;
 int sockfd =  create_socket(atoi(argv[1]));
 printf("socket: %i\n",sockfd);
 cpcb.sockfd = sockfd;
-
 	//IP address
 char hostname[100]; 
 char buffer[20];
@@ -103,7 +102,7 @@ host_address = inet_ntoa(*((struct in_addr *)client->h_addr));
 //current one other node's address:
 struct sockaddr_in their_addr;
 their_addr.sin_family = AF_INET;   
-their_addr.sin_port = htons(atoi(argv[2])); 
+their_addr.sin_port = htons(2200); 
 inet_aton("127.0.0.1", &their_addr.sin_addr);
 
 
@@ -122,11 +121,17 @@ struct timeval tv2;
 tv2.tv_sec = 2;
 struct kademMessage message_from_dht;
 int srv, srv2, leng_name, k;
+//Handle sending a message.
 char* to_ID=(char*)malloc(10*sizeof(char));
 char* ID=(char*)malloc(10*sizeof(char));
 char* delims = (char*)malloc(10*sizeof(char));
 char* message = (char*)malloc(400*sizeof(char));
 char* message2 = (char*)malloc(400*sizeof(char));
+//Handle the response from GET. Extract Ip address and port.
+char* payload_from_get=(char*)malloc(40*sizeof(char));
+char* ip_address_from_get=(char*)malloc(16*sizeof(char));
+int port_from_get_int;
+char* port_from_get_char=(char*)malloc(6*sizeof(char));
 
 FD_ZERO(&readfds);
 FD_SET(cpcb.sockfd, &readfds);
@@ -240,6 +245,9 @@ while(1){
  					if(get(&cpcb,&dhtmachine,ID)>0){
 						printf("Get sent!\n");
 					}
+					//Wait for the GET resp.
+					FD_ZERO(&readfds);
+					FD_SET(cpcb.sockfd, &readfds);
 					srv2 = select(cpcb.sockfd+1, &readfds, NULL, NULL, &tv2);
 					//printf("srv2: %i\n", srv2);
 					if (srv2 == -1) {
@@ -257,11 +265,21 @@ while(1){
 							printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
 							//extract IP address and Port.
 							message_from_dht = kademUdpToMessage(buf_rec, sizeof(buf_rec));
-							printf("ip from new node: %s\n",message_from_dht.payload);
+							printf("ip_address/port from new node: %s\n",message_from_dht.payload);
 						}
 					}
-					//changer sockaddr pour envoyer.
-					//envoyer le resultat.*/
+					//Charge the IP address and the port
+					delims = "/";
+					payload_from_get = message_from_dht.payload;
+					ip_address_from_get = strtok(payload_from_get,delims);
+					leng_name = strlen(ip_address_from_get);
+					strcpy(port_from_get_char, message_from_dht.payload+leng_name+1);
+					port_from_get_int = atoi(port_from_get_char);
+					printf("ip_address to send: %s, port: %i\n", ip_address_from_get, port_from_get_int);
+					
+					their_addr.sin_port = htons(port_from_get_int); 
+					inet_aton(ip_address_from_get, &their_addr.sin_addr);					
+
 					if(sendto(sockfd, message2, strlen(message2), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
 						error("Couldnt' send");
 					}
@@ -451,9 +469,7 @@ int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
 	message.payloadLength = 0;
 
 	header2 = json_object_to_json_string(message.header);
-    	
-    	printf("message: %s\n",header2);	
-
+ 
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
 		return 0;
 	}
