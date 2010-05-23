@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include "node.h"
+#include "store_file.h"
 #include <time.h>
 
 
