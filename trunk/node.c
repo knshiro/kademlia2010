@@ -59,7 +59,8 @@ node_details * delete_head(node_details * bucket){
 	if(bucket != NULL){
         	// The new head of the bucket is the second node_details in the list.
         	node_details * new_head = bucket->next;
-        
+        	free(bucket->ip);
+		free(bucket->nodeID);
         	free(bucket);
         	return new_head;
     	}
@@ -75,9 +76,11 @@ node_details* create_node_details(node_details* node, char* _ip, int _port, char
 
 	node = malloc(sizeof(node_details));
 
-	node->ip = _ip;
-	node->port = _port;
-	node->nodeID = _nodeID;
+	node->ip = malloc((strlen(_ip)+1)*sizeof(char));
+	strcpy(node->ip,_ip);
+	node->port = _port;	
+	node->nodeID = malloc((strlen(_nodeID)+1)*sizeof(char));
+	strcpy(node->nodeID,_nodeID);
 	time_t _timestamp;
     	_timestamp = time (NULL);
 	node->timestamp = _timestamp;
