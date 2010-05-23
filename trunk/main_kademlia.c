@@ -54,6 +54,5 @@ int main(int argc, char *argv[]){
     
     initMachine(&machine,localrpcport,dhtport);
 
-    kademPing(&machine,"127.0.0.1",4000);
     return 0;
 }

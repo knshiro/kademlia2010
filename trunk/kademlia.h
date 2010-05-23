@@ -19,9 +19,11 @@
 
 
 /* Some sizes */
-#define KADEM_MAX_PAYLOAD_SIZE  4096
-#define KADEM_MAX_SEND_BUF_SIZE 8
-#define KADEM_TIMEOUT_REFRESH_DATA    5*60
+#define KADEM_MAX_PAYLOAD_SIZE          4096
+#define KADEM_MAX_SEND_BUF_SIZE         8
+#define KADEM_TIMEOUT_REFRESH_DATA      5*60
+#define HASH_STRING_LENGTH              32+1
+#define HASH_SIGNATURE_LENGTH           16
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -65,7 +67,7 @@ struct kademMachine {
     int sock_local_rpc;
     int sock_p2p;
     int port;
-    char id[35];
+    char id[HASH_STRING_LENGTH];
     struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
     node_details routing_table[160];
     store_file * stored_values;
@@ -121,6 +123,15 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length);
  *              -1  failure
  */
 int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port);
+
+/**
+ * Generate a random transactionId and put it in the parameter
+ *
+ * @param   transactionId   string that will contain the transaction id.
+ * @return  int  0   success
+ *              -1  failure
+ */
+int generateTransactionId(char * transactionId, char *id);
 
 
 /*============================================
