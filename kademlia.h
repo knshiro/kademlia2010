@@ -134,7 +134,7 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length);
  * @return int  0   success
  *              -1  failure
  */
-int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port);
+int kademSendError(struct kademMachine * machine, const char *transactionId, const char * const code, const char * const message, char *addr, int port);
 
 /**
  * Generate a random transactionId and put it in the parameter

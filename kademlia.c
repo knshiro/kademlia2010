@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-
+#include <time.h>
 
 /* Message types */
 const char * const KADEM_QUERY      =    "q";
@@ -59,8 +59,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     int hostname_len = sizeof(hostname);
     struct hostent *server;
     unsigned int buf_len;
-    char signature[128];
-    char id[36]; 
+    char signature[HASH_SIGNATURE_LENGTH];
+    char id[HASH_STRING_LENGTH]; 
     
 
 
@@ -141,13 +141,28 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 
     //Hash
     md5_buffer(buffer,buf_len,signature);
-    md5_sig_to_string(signature, id, 33);
+    md5_sig_to_string(signature, id, HASH_STRING_LENGTH);
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
 
     return 0;
 }
+
+
+int kademMaintenance(struct kademMachine * machine){
+    
+    //TODO refresh the k-buckets
+    //TODO refresh the files stored
+    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
+        
+    return 0;
+}
+
+
+/*============================================
+    Communication tools
+  ============================================*/
 
 int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, int dst_port){
 
@@ -241,6 +256,70 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length){
     message.payloadLength = payloadLength;
     return message;
 }
+
+int kademSendError(struct kademMachine * machine, const char *transactionId, const char * const code, const char * const message, char *addr, int port){
+
+    struct kademMessage error_message;
+    int ret;
+    json_object *header, *error;
+
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+
+    json_object_object_add(header, "y",json_object_new_string(KADEM_ERROR));
+
+    error = json_object_new_object();
+    json_object_object_add(error,"code",json_object_new_string(code));
+    json_object_object_add(error,"value",json_object_new_string(message));
+
+    json_object_object_add(header, KADEM_ERROR,json_object_get(error));
+
+    error_message.header = header;
+    error_message.payloadLength = 0;
+
+    ret = kademSendMessage(machine->sock_p2p, &error_message, addr, port);
+    json_object_put(header);
+    json_object_put(error);
+
+    return ret;
+}
+
+
+
+
+int generateTransactionId(char * transactionId, char * id){
+
+    time_t now;
+    int len;
+    char string_time[32],buffer[HASH_STRING_LENGTH], buffer2[2*HASH_STRING_LENGTH],signature[HASH_SIGNATURE_LENGTH];
+   
+    //Retrieve time
+    now = time(NULL);
+    sprintf(string_time,"%ld",now);
+    len = strlen(string_time); 
+    kdm_debug("Time : %s (%d chars)\n", string_time, len);
+
+    //Hash time
+    md5_buffer(string_time,len,signature);
+    md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH);
+    kdm_debug("Time hashed: %s\n", buffer);
+  
+    //Hash time + id
+    strcpy(buffer2,buffer);
+    strcat(buffer2,id);
+    len = strlen(buffer2);
+    md5_buffer(buffer2,len,signature);
+    md5_sig_to_string(signature, transactionId, HASH_STRING_LENGTH);
+    
+    kdm_debug("Transaction id generated: %s\n", transactionId);
+
+    return 0;
+}
+
+
+/*============================================
+    P2P communication
+  ============================================*/
 
 int kademPing(struct kademMachine * machine, char * addr, int port){
 
@@ -506,11 +585,12 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
     const char *transactionId, *token;
     char *value, *key;
     
+    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
     query_argument = json_object_object_get(message->header,"a");
     
     token = json_object_get_string(json_object_object_get(query_argument,"token"));
 
-    //TODO verify if token exists
+    // Verify if token exists
     while(!found && i<KADEM_MAX_NB_TOKEN){
         if(strcmp(machine->tokens[i],token) == 0){
             found = 1;
@@ -520,14 +600,13 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
             i++;
         }
     }
-
+    
+    if(found){
     //TODO fix payload + create_store_file
     key = json_object_get_string(json_object_object_get(query_argument,"value"));
     value = message->payload;
     machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value));
 
-
-    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -538,56 +617,24 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
     response = json_object_new_object();
     json_object_object_add(response,"id",json_object_new_string(machine->id));
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
-
+    
+    
     answer_message.header = header;
     answer_message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
-
+    }
+    else {
+       //TODO fix ret value
+       ret = kademSendError(machine, transactionId,KADEM_ERROR_STORE,KADEM_ERROR_STORE_VALUE,addr,port); 
+    }
     return ret;
 
 }
 
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message){
-    return 0;
-}
-
-int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port){
-
-    struct kademMessage error_message;
-    int ret;
-    json_object *header, *error;
-
-    header = json_object_new_object(); 
-    json_object_object_add(header, "t",json_object_new_string(transactionId));
-
-    json_object_object_add(header, "y",json_object_new_string(KADEM_ERROR));
-
-    error = json_object_new_object();
-    json_object_object_add(error,"code",json_object_new_string(code));
-    json_object_object_add(error,"value",json_object_new_string(message));
-
-    json_object_object_add(header, KADEM_ERROR,json_object_get(error));
-
-    error_message.header = header;
-    error_message.payloadLength = 0;
-
-    ret = kademSendMessage(machine->sock_p2p, &error_message, addr, port);
-    json_object_put(header);
-    json_object_put(error);
-
-    return ret;
-
-}
-
-int kademMaintenance(struct kademMachine * machine){
-    
-    //TODO refresh the k-buckets
-    //TODO refresh the files stored
-    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
-        
     return 0;
 }
 
@@ -718,6 +765,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
 
    	argument = json_object_new_object();
    	json_object_object_add(argument,"resp",json_object_new_string(ok));
