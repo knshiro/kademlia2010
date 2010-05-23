@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <time.h>
+
 
 /* Message types */
 const char * const KADEM_QUERY      =    "q";
@@ -59,8 +59,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     int hostname_len = sizeof(hostname);
     struct hostent *server;
     unsigned int buf_len;
-    char signature[HASH_SIGNATURE_LENGTH];
-    char id[HASH_STRING_LENGTH]; 
+    char signature[128];
+    char id[36]; 
     
 
 
@@ -141,28 +141,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 
     //Hash
     md5_buffer(buffer,buf_len,signature);
-    md5_sig_to_string(signature, id, HASH_STRING_LENGTH);
+    md5_sig_to_string(signature, id, 33);
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
 
     return 0;
 }
-
-
-int kademMaintenance(struct kademMachine * machine){
-    
-    //TODO refresh the k-buckets
-    //TODO refresh the files stored
-    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
-        
-    return 0;
-}
-
-
-/*============================================
-    Communication tools
-  ============================================*/
 
 int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, int dst_port){
 
@@ -256,70 +241,6 @@ struct kademMessage kademUdpToMessage(char * udpPacket, int length){
     message.payloadLength = payloadLength;
     return message;
 }
-
-int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port){
-
-    struct kademMessage error_message;
-    int ret;
-    json_object *header, *error;
-
-    header = json_object_new_object(); 
-    json_object_object_add(header, "t",json_object_new_string(transactionId));
-
-    json_object_object_add(header, "y",json_object_new_string(KADEM_ERROR));
-
-    error = json_object_new_object();
-    json_object_object_add(error,"code",json_object_new_string(code));
-    json_object_object_add(error,"value",json_object_new_string(message));
-
-    json_object_object_add(header, KADEM_ERROR,json_object_get(error));
-
-    error_message.header = header;
-    error_message.payloadLength = 0;
-
-    ret = kademSendMessage(machine->sock_p2p, &error_message, addr, port);
-    json_object_put(header);
-    json_object_put(error);
-
-    return ret;
-}
-
-
-
-
-int generateTransactionId(char * transactionId, char * id){
-
-    time_t now;
-    int len;
-    char string_time[32],buffer[HASH_STRING_LENGTH], buffer2[2*HASH_STRING_LENGTH],signature[HASH_SIGNATURE_LENGTH];
-   
-    //Retrieve time
-    now = time(NULL);
-    sprintf(string_time,"%ld",now);
-    len = strlen(string_time); 
-    kdm_debug("Time : %s (%d chars)\n", string_time, len);
-
-    //Hash time
-    md5_buffer(string_time,len,signature);
-    md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH);
-    kdm_debug("Time hashed: %s\n", buffer);
-  
-    //Hash time + id
-    strcpy(buffer2,buffer);
-    strcat(buffer2,id);
-    len = strlen(buffer2);
-    md5_buffer(buffer2,len,signature);
-    md5_sig_to_string(signature, transactionId, HASH_STRING_LENGTH);
-    
-    kdm_debug("Transaction id generated: %s\n", transactionId);
-
-    return 0;
-}
-
-
-/*============================================
-    P2P communication
-  ============================================*/
 
 int kademPing(struct kademMachine * machine, char * addr, int port){
 
@@ -633,6 +554,43 @@ int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessa
     return 0;
 }
 
+int kademSendError(struct kademMachine * machine, char *transactionId, char *code, char *message, char *addr, int port){
+
+    struct kademMessage error_message;
+    int ret;
+    json_object *header, *error;
+
+    header = json_object_new_object(); 
+    json_object_object_add(header, "t",json_object_new_string(transactionId));
+
+    json_object_object_add(header, "y",json_object_new_string(KADEM_ERROR));
+
+    error = json_object_new_object();
+    json_object_object_add(error,"code",json_object_new_string(code));
+    json_object_object_add(error,"value",json_object_new_string(message));
+
+    json_object_object_add(header, KADEM_ERROR,json_object_get(error));
+
+    error_message.header = header;
+    error_message.payloadLength = 0;
+
+    ret = kademSendMessage(machine->sock_p2p, &error_message, addr, port);
+    json_object_put(header);
+    json_object_put(error);
+
+    return ret;
+
+}
+
+int kademMaintenance(struct kademMachine * machine){
+    
+    //TODO refresh the k-buckets
+    //TODO refresh the files stored
+    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
+        
+    return 0;
+}
+
 int startKademlia(struct kademMachine * machine){
     int ret_select, num_read,from_port;
     socklen_t from_len;
@@ -743,6 +701,198 @@ int startKademlia(struct kademMachine * machine){
 }
 
 
+
+
 /*============================================
     RPC communication
   ============================================*/
+
+
+int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+	//TODO: store the value.
+
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char* ok = "OK";
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+	answer_message.header = header;
+	answer_message.payloadLength = 0;
+
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+	
+	return 0;
+}
+
+int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+	//TODO: do the ping.
+
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char* ok = "OK"; //or Not OK to do.
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+	answer_message.header = header;
+	answer_message.payloadLength = 0;
+
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+	//TODO: print routing table.
+	//OU est-elle?
+		
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char* ok = "OK";
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+	answer_message.header = header;
+	answer_message.payloadLength = 0;
+
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+	//TODO: print objects
+
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char* ok = "OK";
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+	answer_message.header = header;
+	answer_message.payloadLength = 0;
+
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+	return 0;
+}
+
+
+int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+	
+	//TODO: find the appropriate IP address and port.
+	char* ip_address_to_send;
+	int port_to_send;
+
+
+	//create the payload: "ip_address/port":
+	char* ok = "OK";
+	char payload[4000];
+	char leng_payload[5];
+	strcat(payload, ip_address_to_send);
+	strcat(payload,"/");
+	strcat(payload,port_to_send);
+	int leng = strlen(payload);
+	sprintf(leng_payload,"%d",leng); 
+	printf("payload: %s, size=%i\n",payload,leng);
+	
+	char* header2;
+
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+	json_object_object_add(argument,"numbytes",json_object_new_string(leng_payload));
+    	json_object_object_add(header,"r",json_object_get(argument));
+
+	answer_message.header = header;
+	strcpy(answer_message.payload,payload);
+	kdm_debug("message.payload: %s\n",answer_message.payload);
+	answer_message.payloadLength = leng;
+
+	header2 = json_object_to_json_string(answer_message.header);
+    	
+    	kdm_debug("message: %s\n",header2);
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+	//TODO: kill_node
+		
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char* ok = "OK";
+	header = json_object_new_object(); 
+
+	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+   	argument = json_object_new_object();
+   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+	answer_message.header = header;
+	answer_message.payloadLength = 0;
+
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+
+
+	return 0;	
+}
+
