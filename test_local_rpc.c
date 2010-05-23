@@ -14,6 +14,20 @@
 #include <sys/wait.h>
 
 
+/* Message types */
+const char * const KADEM_QUERY      =    "q";                                        
+const char * const KADEM_ANSWER     =    "r";                                        
+            
+/*Message query types */
+const char * const KADEM_PING       =    "ping";                                     
+const char * const KADEM_STORE      =    "put";                                      
+const char * const KADEM_FIND_NODE  =    "find_node";                                
+const char * const KADEM_FIND_VALUE =    "get";  
+const char * const KADEM_PRINT_TABLE = 	 "print_routing_table";
+const char * const KADEM_PRINT_OBJECT_IDS = "print_object_ids";
+const char * const KADEM_KILL_NODE = "kill_node";
+
+
 /* create a socket and bind it to the local address and a port  */
 int create_socket(int port){
   int sockfd;
@@ -114,9 +128,30 @@ char* message = (char*)malloc(400*sizeof(char));
 					printf("%s\n",buf_rec); 
 					
 					//Socket-> Answer
-					message = "OK";
+					struct kademMessage message;
+					json_object *header, *argument;
+					char* payload = malloc(400*sizeof(char));
+					payload = "127.0.0.1/4200";	
+					int leng = strlen(payload);
+					char payload_len[5];
+					sprintf(payload_len,"%d",leng);
+					char* header2;			
+					
+					header = json_object_new_object(); 
+					json_object_object_add(header, "y", json_object_new_string(KADEM_ANSWER));
 
-					if(sendto(cpcb.sockfd, message, strlen(message), flags, (struct sockaddr*)&from, fromlen)<0)
+				   	argument = json_object_new_object();
+				   	json_object_object_add(argument, "resp", json_object_new_string("OK"));					
+					json_object_object_add(argument, "numbytes", json_object_new_string(payload_len));
+    				json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+
+					message.header = header;
+					message.payloadLength = payload_len;
+					strcpy(message.payload,payload);
+					header2 = json_object_to_json_string(message.header);
+					
+					printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
+					if(kademSendMessage(cpcb.sockfd, &message, inet_ntoa(from.sin_addr), ntohs(from.sin_port))<0)
 						{
 							error("Couldn't send");
 						}
