@@ -34,7 +34,7 @@ struct _routing_table{
 //@return: 0 node inserted 1 node rejected.
 node_details * insert_to_tail(node_details * bucket, node_details* node);
 node_details* create_node_details(node_details* node, char* _ip, int _port, char* _nodeID);
-void print_ports(node_details * bucket);
+void print_nodes(node_details * bucket, int kbucket_no);
 node_details * delete_head(node_details * bucket);
 int count_nodes_details(node_details * bucket);
 node_details * delete_head_insert_tail(node_details * bucket, node_details* node);
@@ -44,5 +44,9 @@ node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, 
 
 int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nodeID, char* ip, int port);
 int find_node_details(char* this_node, char* other_node);
+
+int print_routing_table(routing_table);
+
+
 
 #endif

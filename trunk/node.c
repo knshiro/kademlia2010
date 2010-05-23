@@ -92,13 +92,13 @@ node_details* create_node_details(node_details* node, char* _ip, int _port, char
 
 
 //Print port of node_details in the node_details *
-void print_ports(node_details * bucket){
+void print_nodes(node_details * bucket, int kbucket_no){
     
 	node_details* temp = NULL;
 	temp = bucket;
-	printf("nodeID in the k_bucket:\n");
+	printf("nodeID in the k_bucket %i:\n",kbucket_no);
     	while(temp != NULL){
-        	printf("nodeID: %s\n", temp->nodeID);
+        	printf("nodeID: %s, IP_address: %s, port: %i\n", temp->nodeID,temp->ip,temp->port);
         	temp = temp->next;
     	}
 	printf("\n");
@@ -253,6 +253,14 @@ int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nod
 	
 }
  
+//Print the routing table.
+int print_routing_table(routing_table r_table){
 
+	int i=0;
+	for(i;i<159;i++){
+		print_nodes(r_table.table[i],i);
+	}
+	return 0;
+}
 
 
