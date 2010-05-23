@@ -24,6 +24,7 @@ typedef store_file* stored_values;
 
 //Declaration of functions
 store_file* create_store_file( char* _key, char* _value);
+void delete_store_file(store_file* store_file);
 stored_values insert_to_tail_file(stored_values stored_values, store_file* store_file);
 stored_values verify_key(stored_values values, store_file* file);
 stored_values delete_head_file(stored_values stored_values);

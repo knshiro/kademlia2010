@@ -13,14 +13,25 @@
 store_file* create_store_file( char* _key, char* _value){
     store_file* file =malloc(sizeof(store_file));
 
-    file->key = _key;
-    file->value = _value;
+    file->key = malloc((strlen(_key)+1)*sizeof(char));
+    file->value = malloc((strlen(_value)+1)*sizeof(char));
+	strcpy(file->key, _key);
+	strcpy(file->value, _value);
     time_t _timestamp;
     _timestamp = time (NULL);
     file->timestamp = _timestamp;
     file->next = NULL;
 
     return file;
+}
+
+//Delete a store file
+void delete_store_file(store_file* store_file)
+{
+	free(store_file->key);
+	free(store_file->value);
+	free(store_file);
+	//printf("delete ok\n");
 }
 
 
@@ -63,7 +74,7 @@ temp = values;
 temp2 = NULL;
 printf("\nok\n");
 
-if(values->next == NULL)
+if(values ->next == NULL)
 {
 printf("\nok2\n");
 fflush(stdout);
@@ -121,7 +132,7 @@ stored_values verify_key(stored_values values, store_file* file){
             if(strcmp(temp->next->value, file->value)==0)
             {
                 temp->next = temp->next->next;
-                free(temp2);
+                delete_store_file(temp2);
             }
             temp = temp->next;
             if(temp == NULL){
@@ -133,8 +144,10 @@ stored_values verify_key(stored_values values, store_file* file){
 
 }
 
-//Delete the head of the stored_values.
-//Return the new head of the stored_values.
+/**Delete the head of the stored_values.
+  *Return the new head of the stored_values.
+  *stored_values delete_head_file(stored_values values)
+ */
 stored_values delete_head_file(stored_values values)
 {
     stored_values new_head = NULL;
@@ -142,15 +155,16 @@ stored_values delete_head_file(stored_values values)
     {
         // The new head of the stored_values is the second store_file in the list.
         new_head = values->next;
-        free(values);
+        delete_store_file(values);
     }
 
     return new_head;
 }
 
 
-//Delete the store_file older than "age" seconds
-//Return the new head of the stored_values
+/**Delete the store_file older than "age" seconds
+  *Return the new head of the stored_values
+ */
 stored_values clean(stored_values values, int age)
 {
     time_t _timestamp;
