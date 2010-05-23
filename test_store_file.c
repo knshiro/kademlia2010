@@ -69,7 +69,18 @@ int main(void)
 	file1 = clean(file1, 1);
 	
     printFiles(file1);
-    printf("value: %s\n", file1->value);	
+    printf("value: %s\n", file1->value);
 
+	/* Test delete function
+	while(1)
+		{
+			struct store_file* file1;
+			char* _key = "100";
+			char* _value = "bonjour";
+			file1 = create_store_file( _key, _value);
+			delete_store_file(file1);
+		}
+	*/	
+	
 	return 0;
 }
