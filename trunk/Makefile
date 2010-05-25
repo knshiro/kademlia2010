@@ -14,7 +14,7 @@ CC = gcc -Wall -g
 
 all:   kademlia test_md5 test_store_file test_local_rpc messaging test
 
-test :   test_kademlia.o kademlia.o md5.o store_file.o
+test :   test_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 	${CC} -o $@ $^ ${LIBS}
 
 kademlia:    main_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
