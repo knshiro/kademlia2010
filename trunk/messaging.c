@@ -68,24 +68,33 @@ int create_socket(int port){
 
 int main(int argc, char* argv[]){
 
-//argv[1] = port of the client 
-//argv[2] = port of the DHT
-//argv[3] = identifiant/login
-printf("client's port: %i\n", atoi(argv[1]));
-char* login = argv[3];
+//argv[1] = port of the client P2P
+//argv[2] = port of the client RPC
+//argv[3] = port of the DHT
+//argv[4] = identifiant/login
+
+printf("client's port_P2P: %i\n", atoi(argv[1]));
+char* login = argv[4];
 printf("your login: %s\n", login);
 
 //initialize DHT machine
 struct dhtMachine dhtmachine;
 dhtmachine.address_ip = "127.0.0.1";
-dhtmachine.port = (atoi(argv[2]));
+dhtmachine.port = (atoi(argv[3]));
 
 //initialize client machine
-	//socket and port
+	//socket and port P2P
 struct rtlp_client_pcb cpcb;
 int sockfd =  create_socket(atoi(argv[1]));
-printf("socket: %i\n",sockfd);
+printf("socket_P2P: %i\n",sockfd);
 cpcb.sockfd = sockfd;
+
+	//socket and port RPC
+struct rtlp_client_pcb cpcb_rpc;
+int sockfd2 =  create_socket(atoi(argv[2]));
+printf("socket_RPC: %i\n",sockfd);
+cpcb_rpc.sockfd = sockfd2;
+
 	//IP address
 char hostname[100]; 
 char buffer[20];
@@ -134,20 +143,22 @@ int port_from_get_int;
 char* port_from_get_char=(char*)malloc(6*sizeof(char));
 
 FD_ZERO(&readfds);
-FD_SET(cpcb.sockfd, &readfds);
+FD_SET(cpcb_rpc.sockfd, &readfds);
 FD_SET(fileno(stdin), &readfds);
 
 //Initialize / enter the network -> send a PUT.	
-if(put(&cpcb,&dhtmachine, login, host_address, argv[1])<0){
+if(put(&cpcb_rpc,&dhtmachine, login, host_address, argv[2])<0){
 	printf("Cannot enter the network.");
 	exit(-1);
 }
 
-
+printf("cpcb_p2p");
 //Wait for data in stdin or in socket
 while(1){
+
 	FD_ZERO(&readfds);
 	FD_SET(cpcb.sockfd, &readfds);
+
 	FD_SET(fileno(stdin), &readfds);
 
 	//stdin or socket!
@@ -175,13 +186,13 @@ while(1){
 			
 
 			if(strcmp(buf_send2,"//print_table")==0){
-				if(print_routing_table(&cpcb, &dhtmachine)>0){
+				if(print_routing_table(&cpcb_rpc, &dhtmachine)>0){
 					printf("Request print table sent!\n");
 				}
 					bzero(buf_send2, sizeof(buf_send2));
 				}
 				else if(strcmp(buf_send2,"//print_object")==0){
-					if(print_object_ids(&cpcb, &dhtmachine)>0){
+					if(print_object_ids(&cpcb_rpc, &dhtmachine)>0){
 						printf("Request print object ids sent!\n");
 					}
 					bzero(buf_send2, sizeof(buf_send2));
@@ -189,14 +200,14 @@ while(1){
 				else if(strcmp(strtok(buf_send2," "),"//ping")==0){
 					char ping[40];
 					strcpy(ping,buf_send2+7);
-					if(ping_node(&cpcb,&dhtmachine,ping)>0){
+					if(ping_node(&cpcb_rpc,&dhtmachine,ping)>0){
 						printf("Ping sent!\n");
 					}
 					bzero(buf_send2, sizeof(buf_send2));
 					bzero(ping, sizeof(ping));
 				}
 				else if(strcmp(buf_send2,"//kill_node")==0){
-					if(kill_node(&cpcb, &dhtmachine)>0){
+					if(kill_node(&cpcb_rpc, &dhtmachine)>0){
 						printf("kill_node sent!\n");
 					}
 					bzero(buf_send2, sizeof(buf_send2));
@@ -213,7 +224,7 @@ while(1){
 				else if(strcmp(buf_send2,"//find_node")==0){
 					char find[40];
 					strcpy(find,buf_send2+12);
-					if(find_node(&cpcb,&dhtmachine,find)>0){
+					if(find_node(&cpcb_rpc,&dhtmachine,find)>0){
 						printf("Find node sent!\n");
 					}
 					bzero(buf_send2, sizeof(buf_send2));
@@ -242,13 +253,13 @@ while(1){
 					strcat(message2,message);
 					
 					//send a GET to the DHT with the ID of the node.
- 					if(get(&cpcb,&dhtmachine,ID)>0){
+ 					if(get(&cpcb_rpc,&dhtmachine,ID)>0){
 						printf("Get sent!\n");
 					}
 					//Wait for the GET resp.
 					FD_ZERO(&readfds);
-					FD_SET(cpcb.sockfd, &readfds);
-					srv2 = select(cpcb.sockfd+1, &readfds, NULL, NULL, &tv2);
+					FD_SET(cpcb_rpc.sockfd, &readfds);
+					srv2 = select(cpcb_rpc.sockfd+1, &readfds, NULL, NULL, &tv2);
 					//printf("srv2: %i\n", srv2);
 					if (srv2 == -1) {
 						perror("select"); // error occurred in select()
@@ -257,9 +268,9 @@ while(1){
 						printf("No answer from the DHT\n");
 					}
 					else{
-						if(FD_ISSET(cpcb.sockfd, &readfds)) {
+						if(FD_ISSET(cpcb_rpc.sockfd, &readfds)) {
 							bzero(buf_rec, sizeof(buf_rec));
-							if((numread = recvfrom(cpcb.sockfd,buf_rec,sizeof(buf_rec), 0, (struct sockaddr*)&from, &fromlen)) < 0){
+							if((numread = recvfrom(cpcb_rpc.sockfd,buf_rec,sizeof(buf_rec), 0, (struct sockaddr*)&from, &fromlen)) < 0){
 								error("Couldnt' receive from socket");	
 							}
 							printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),from.sin_port);
