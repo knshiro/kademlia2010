@@ -812,18 +812,41 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TODO: do the ping
+	// Extract value from KademMessage
+	char* hash_value;	
+	hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
+
+	// Use hash value and MachineID to find the right node_details using find_node_details and look_for_id functions
+	int bucket_val;
+	node_details* bucket;
+	node_details* Kbucket;
+	char* _ip;
+	int _port;
+
+	bucket_val = find_node_details(machine->id, hash_value)	;
+	Kbucket = machine->routes.table[bucket_val];
+	bucket = look_for_IP(Kbucket, hash_value);		
+
+	// Extract IP/Port from node_details
+	_ip = bucket->ip;
+	_port = bucket->port;
+
+	// Send Kadem_ping to the right node
+	kademPing(machine, _ip, _port);	
+
+	// Wait for answer from the node and reply to the application OK or NOK
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
-	char* ok = "OK"; //or Not OK to do.
+	char* ok = "OK";
+	char* nok = "NOK";
 	header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
    	argument = json_object_new_object();
    	json_object_object_add(argument,"resp",json_object_new_string(ok));
-    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+    json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
 
 	answer_message.header = header;
 	answer_message.payloadLength = 0;

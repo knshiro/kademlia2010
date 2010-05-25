@@ -5,8 +5,11 @@
 #include <netdb.h>
 #include <ctype.h>
 #include <unistd.h>
+#include "node.h"
+#include "XORmetrics.h"
 
 #include <string.h>
+
 //extern _kdm_debug;
 
 int main(int argc, char *argv[]){
@@ -21,7 +24,7 @@ int main(int argc, char *argv[]){
     _kdm_debug = 1;
     initMachine(&machine,6000,7000);
     kdm_debug("Machine inited, id: %s\n", machine.id);
-  
+  /*
     //###############################
     // Test of udpToMessage         #
     //###############################
@@ -82,10 +85,44 @@ int main(int argc, char *argv[]){
    /* kdm_debug(">>>>Store value\n");
     kademHandleStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
     kdm_debug("<<<<Store value\n\n");*/
-    
+   
+   /* 
     kdm_debug(">>>>Send error\n");
     kademSendError(&machine,"trans1",KADEM_ERROR_GENERIC,KADEM_ERROR_GENERIC_VALUE,addr,port);
     kdm_debug("<<<<Send error\n\n");
-    
+  */  
+
+	//###############################
+    // Test of RPCHandlePing        #
+    //###############################
+
+	// Create buckets
+	machine.stored_values = malloc(sizeof(stored_values));
+	//Create the contact information table and 160 node_details *:
+	int i=0;
+	routing_table table;
+	table = machine.routes;
+	for(i;i<159;i++)
+		{
+			table.table[i]=NULL;
+		}
+	
+	printf("\n***************** first series of test  *************\n");
+	//TEST1:
+	int bucket_no;
+	bucket_no = insert_into_contact_table(&table, "ABE34AE3","12345665", "adress", 9876);
+	printf("bucket_no: %i\n",bucket_no);
+	print_nodes(&table, table.table[bucket_no]);
+	bucket_no = insert_into_contact_table(&table, "1234683222222222","12346340E22ABC22", "adress", 2344);
+	printf("bucket_no: %i\n",bucket_no);
+	print_nodes(&table, table.table[bucket_no]);
+	bucket_no = insert_into_contact_table(&table, "2323","FFFF", "adress", 12);
+	printf("bucket_no: %i\n",bucket_no);
+	print_nodes(&table, table.table[bucket_no]);
+	bucket_no = insert_into_contact_table(&table, "ABE34AE3","12345665", "adress", 9876);
+	printf("bucket_no: %i\n",bucket_no);
+	print_nodes(&table, table.table[bucket_no]);
+	
+
     return 0;
 }
