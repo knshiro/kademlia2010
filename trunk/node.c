@@ -205,14 +205,15 @@ int find_node_details(char* this_node, char* other_node){
 
 	int res;
 	char* distance = (char*)malloc(strlen(this_node)*sizeof(char));
-	distance = XORmetrics (this_node, other_node);
+	distance = XORmetrics (distance, this_node, other_node);
+	printf("distance: %s\n", distance);
 	int length = strlen(distance);
 	int i=0;
-	while(distance[length-i]=='0'){
+	while(distance[i]=='0'){
 		i++;
 	}
-	char alpha = distance[length-i];
-	int len = length-i;
+	char alpha = distance[i];
+	int len = length-1-i;
 
 	if(alpha=='1'){
 		res = 4*len;
@@ -226,7 +227,8 @@ int find_node_details(char* this_node, char* other_node){
 	else{
 		res = 4*len+3;
 	}
-
+	
+	printf("resultat: %i\n", res);
 	return res;
 }
 

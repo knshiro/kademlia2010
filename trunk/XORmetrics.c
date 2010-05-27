@@ -7,7 +7,7 @@ char* XORmetrics (char* hash1, char* hash2); */
 
 #include "XORmetrics.h"
 
-char* XORmetrics (char* hash1, char* hash2)
+char* XORmetrics (char* distance, char* hash1, char* hash2)
 {
  	/* transformation of hash1 and hash2 (hexadecimal) into bits */
  	/* Declaration of variables */
@@ -203,5 +203,6 @@ char* XORmetrics (char* hash1, char* hash2)
 		 }
 	 }
 	 HEXdistance[imax] = '\0';
-	 return HEXdistance;
+	strcpy(distance, HEXdistance);
+	 return distance;
 }
