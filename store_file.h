@@ -15,8 +15,9 @@
 typedef struct store_file store_file;
 struct store_file
 {
-    	char* key;
+    char* key;
 	char* value;
+	int value_len;	
 	time_t timestamp;
    	store_file* next;
 };
@@ -26,7 +27,7 @@ typedef store_file* stored_values;
 
 
 //Declaration of functions
-store_file* create_store_file( char* _key, char* _value);
+store_file* create_store_file( char* _key, char* _value, int _value_len);
 void delete_store_file(store_file* store_file);
 stored_values insert_to_tail_file(stored_values stored_values, store_file* store_file);
 stored_values verify_key(stored_values values, store_file* file);

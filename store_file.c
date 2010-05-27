@@ -10,13 +10,13 @@
 #include <time.h>
 
 //Create a store_file struct
-store_file* create_store_file( char* _key, char* _value){
+store_file* create_store_file( char* _key, char* _value, int _value_len){
     store_file* file =malloc(sizeof(store_file));
 
     file->key = malloc((strlen(_key)+1)*sizeof(char));
-    file->value = malloc((strlen(_value)+1)*sizeof(char));
+    file->value = malloc(_value_len*sizeof(char));
 	strcpy(file->key, _key);
-	strcpy(file->value, _value);
+	memcpy(file->value, _value, _value_len);
     time_t _timestamp;
     _timestamp = time (NULL);
     file->timestamp = _timestamp;
