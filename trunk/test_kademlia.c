@@ -17,6 +17,7 @@ int main(int argc, char *argv[]){
     json_object *header, *argument;
     struct kademMessage message;
     char udpPacket[400], hash[HASH_STRING_LENGTH];
+    char test[] = "test5asf3as4f5asd4f";
     char * transactionId = "04";
     char * addr = "127.0.0.1";
     int port = 4000;
@@ -24,7 +25,10 @@ int main(int argc, char *argv[]){
     _kdm_debug = 1;
     initMachine(&machine,6000,7000);
     kdm_debug("Machine inited, id: %s\n", machine.id);
-  /*
+ 
+    printf("%d\n",sizeof(test)); 
+   
+    /*
     //###############################
     // Test of udpToMessage         #
     //###############################
@@ -73,9 +77,25 @@ int main(int argc, char *argv[]){
     kdm_debug(">>>>Find value\n");
     kademFindValue(&machine,"value1",addr,port);
     kdm_debug("<<<<Find value\n\n");
-    
+   
     kdm_debug(">>>>Handle Find value\n");
+   
+    printf("First test: value not found\n");
+    printf("%s\n",json_object_to_json_string(message.header));
+    json_object_object_add(argument,"value",json_object_new_string("@john"));
+    json_object_object_add(argument,"token",json_object_new_string("123456789"));
+    json_object_object_add(header,"a",json_object_get(argument));
+    printf("%s\n",json_object_to_json_string(message.header));
+    message.header = header;
+    printf("%s\n",json_object_to_json_string(message.header));
+    
     kademHandleFindValue(&machine,&message,addr,port);
+   
+
+    printf("\nSecond test: value found\n");
+    machine.stored_values = insert_to_tail_file(machine.stored_values,create_store_file("@john","127.0.0.1/4000"));    
+    kademHandleFindValue(&machine,&message,addr,port);
+
     kdm_debug("<<<<Handle Find value\n\n");
     
     kdm_debug(">>>>Store value\n");

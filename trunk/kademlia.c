@@ -65,6 +65,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     char id[HASH_STRING_LENGTH]; 
     
 
+    machine->stored_values = NULL;
 
     //####################################
     // Create first socket for local RPC #
@@ -515,11 +516,16 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     struct kademMessage answer_message;
     int ret;
-    json_object *header, *response, *node_array;
-    const char * transactionId; 
-    char * token = "tokenabc1";     //TODO create a real token
-
+    json_object *header, *response, *node_array, *query;
+    const char * transactionId, *key, *token;
+    store_file * value; 
+    char node_string[HASH_STRING_LENGTH+15+6+3+1];
+    node_details* nodes, *current_node;
+    
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
+    query = json_object_object_get(message->header,"a");
+    key = json_object_get_string(json_object_object_get(query,"value"));
+    token = json_object_get_string(json_object_object_get(query,"token"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -532,18 +538,31 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     answer_message.payloadLength = 0;
 
     node_array = json_object_new_array();
-    //TODO look for value
-    if(1){
-
-        json_object_object_add(response,"value",json_object_new_string("value1"));
-        json_object_object_add(response,"numbytes",json_object_new_string("0"));
-        answer_message.payloadLength = 0;
-
+    kdm_debug("Looking for value : %s\n",key);
+    
+    //look for value
+    if((value = find_key(machine->stored_values,key))!=NULL){
+        kdm_debug("Value found !\n");
+        json_object_object_add(response,"value",json_object_new_string(key));
+        json_object_object_add(response,"numbytes",json_object_new_int(value->value_len));
+        answer_message.payloadLength = value->value_len;
+        memcpy(answer_message.payload,value->value,answer_message.payloadLength);
     }
     else {
-        //TODO Fill with value
+        kdm_debug("Value not found\n");
+        nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
+        current_node = nodes;
+        while(current_node != NULL){
+            strcpy(node_string,nodes->ip);
+            strcat(node_string,"/");
+            sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
+            strcat(node_string,"/");
+            strcat(node_string,nodes->nodeID);
+            kdm_debug("Node %s added\n",node_string);
+            json_object_array_add(node_array,json_object_new_string(node_string));
+            current_node = current_node->next;
+        }
         json_object_object_add(response,"nodes",json_object_get(node_array));
-
     }
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
@@ -786,7 +805,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 	store_file* new_value = malloc(sizeof(store_file));
 	int length = strlen(data);
-	new_value = create_store_file(temp, data, length;
+	new_value = create_store_file(temp, data, length);
 	insert_to_tail_file(machine->stored_values, new_value);
 
 	//Answer
@@ -840,8 +859,8 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 
 	struct kademMessage answer_message;
 	json_object *header, *argument;
-	char* ok = "OK";
-	char* nok = "NOK";
+	char ok[] = "OK";
+	char nok[] = "NOK";
 	header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
@@ -936,9 +955,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 
 	//create the payload: "ip_address/port":
 	char* ok = "OK";
-	char leng_payload[5];
 	int leng = strlen(value);
-	sprintf(leng_payload,"%d",leng); 
 	
 	char* header2;
 
@@ -951,7 +968,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 
    	argument = json_object_new_object();
    	json_object_object_add(argument,"resp",json_object_new_string(ok));
-	json_object_object_add(argument,"numbytes",json_object_new_string(leng_payload));
+	json_object_object_add(argument,"numbytes",json_object_new_int(leng));
     	json_object_object_add(header,"r",json_object_get(argument));
 
 	answer_message.header = header;
