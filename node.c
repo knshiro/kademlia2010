@@ -308,13 +308,15 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 					bucket_minus = 1;
 					look_into=routes->table[bucket_no+1];
 				}
+				if(bucket_no + bucket_minus > 159 && go_back == 0){
+					return result;
+				}
 				if(go_back == 1){
-					printf("bucket_no-bucket_minus: %i\n",bucket_no-bucket_minus);
+					//printf("bucket_no-bucket_minus: %i\n",bucket_no-bucket_minus);
 					look_into = routes->table[bucket_no-bucket_minus];
-					printf("test2\n");
 					bucket_minus++;
 				}else{
-					printf("bucket_no-bucket_minus: %i\n",bucket_no+bucket_minus);
+					//printf("bucket_no-bucket_minus: %i\n",bucket_no+bucket_minus);
 					look_into = routes->table[bucket_no + bucket_minus];
 					bucket_minus++;
 				}
