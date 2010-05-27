@@ -548,6 +548,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
         answer_message.payloadLength = value->value_len;
         memcpy(answer_message.payload,value->value,answer_message.payloadLength);
     }
+
     else {
         kdm_debug("Value not found\n");
         nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 

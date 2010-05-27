@@ -18,6 +18,7 @@ struct store_file
     char* key;
 	char* value;
 	int value_len;	
+	int count;
 	time_t timestamp;
    	store_file* next;
 };
