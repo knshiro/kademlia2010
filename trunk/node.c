@@ -200,7 +200,7 @@ node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, 
 
 
 
-//look into the contact table (made of 160 node_details *s) the correct bucket for a value. take
+//look into the contact table (made of 160 node_details *s) the correct bucket for a value.
 int find_node_details(char* this_node, char* other_node){
 
 	int res;
