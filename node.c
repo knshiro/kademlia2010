@@ -10,7 +10,7 @@
 #include "XORmetrics.h"
 #include "md5.h"
 #include <time.h>
-
+#include "kademlia.h"
 
 
 
@@ -329,7 +329,7 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 
 
 //Take a k_bucket as argument and free it.
-int free_k_bucket(node_details* k_bucket){
+void free_k_bucket(node_details* k_bucket){
 
 	node_details* temp;
 	node_details* temp2;
@@ -347,4 +347,56 @@ void free_node(node_details* node){
 	free(node->nodeID);
 	free(node->ip);
 }
+
+
+
+//Operations on node struct.
+char* concatenate(node_details* node){
+
+	char* result = (char*)malloc((HASH_STRING_LENGTH+15+6+2+1)*sizeof(char));
+	char* delim= "/";
+	char portt[6];
+	sprintf(portt,"%d",node->port); 
+
+	strcat(result,node->nodeID);
+	strcat(result,delim);
+	strcat(result,node->ip);
+	strcat(result,delim);
+	strcat(result,portt);
+
+	return result;
+}
+
+node_details* create_node_from_string(char* concatenated){
+	
+	node_details* result;
+
+	char* pointer;
+	char* separateur = { "/" };
+	char* buffer;
+	buffer = strdup (concatenated);
+	int count = 1;
+
+	char* nodeID = malloc(16*sizeof(char));
+	char * ip = malloc(15*sizeof(char));
+	int port;
+
+	pointer = strtok( buffer, separateur );
+	strcpy(nodeID, pointer);
+	while( pointer != NULL ){
+		// Cherche les autres separateur
+		pointer = strtok(NULL, separateur);
+		if ( pointer != NULL ){
+			if (count==1){
+				strcpy(ip, pointer);
+			}else if (count==2){
+				port = atoi(pointer);
+			}
+			count++;
+		}
+	} 
+	result = create_node_details(result, ip, port, nodeID);
+
+}
+
 
