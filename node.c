@@ -326,3 +326,23 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 
 
 
+//Take a k_bucket as argument and free it.
+int free_k_bucket(node_details* k_bucket){
+
+	node_details* temp;
+	node_details* temp2;
+	temp = k_bucket;
+
+	while(temp->next!=NULL){
+		temp2 = temp->next;
+		free_node(temp);
+		temp = temp2;	
+	}
+}
+
+
+void free_node(node_details* node){
+	free(node->nodeID);
+	free(node->ip);
+}
+

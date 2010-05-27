@@ -46,7 +46,10 @@ int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nod
 int find_node_details(char* this_node, char* other_node);
 
 int print_routing_table(routing_table);
-
+int free_k_bucket(node_details* k_bucket);
+void free_node(node_details* node);
 node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find);
+
+
 
 #endif
