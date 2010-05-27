@@ -65,7 +65,6 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     char id[HASH_STRING_LENGTH]; 
     
 
-    machine->stored_values = NULL;
 
     //####################################
     // Create first socket for local RPC #
@@ -162,6 +161,7 @@ int kademMaintenance(struct kademMachine * machine){
     return 0;
 }
 
+/*
 struct kademMessage* findMessageByTransactionId(struct kademMachine * machine, char * transactionId){
     struct kademMessage* result = NULL;
     const char * buffer;
@@ -178,6 +178,7 @@ struct kademMessage* findMessageByTransactionId(struct kademMachine * machine, c
     }    
     return result;
 }
+*/
 
 /*============================================
     Communication tools
@@ -366,6 +367,13 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     json_object_put(header);
     json_object_put(argument);
 
+	// Store Query in sent_queries
+	
+	// TODO
+	/*store_file* query;
+	char * head = json_object_to_json_string(message.header);
+	query = create_store_file( transactionId, head, strlen(head));
+	*/
 
     return ret;
 }
@@ -516,16 +524,11 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     struct kademMessage answer_message;
     int ret;
-    json_object *header, *response, *node_array, *query;
-    const char * transactionId, *key, *token;
-    store_file * value; 
-    char node_string[HASH_STRING_LENGTH+15+6+3+1];
-    node_details* nodes, *current_node;
-    
+    json_object *header, *response, *node_array;
+    const char * transactionId; 
+    char * token = "tokenabc1";     //TODO create a real token
+
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
-    query = json_object_object_get(message->header,"a");
-    key = json_object_get_string(json_object_object_get(query,"value"));
-    token = json_object_get_string(json_object_object_get(query,"token"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -538,32 +541,18 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     answer_message.payloadLength = 0;
 
     node_array = json_object_new_array();
-    kdm_debug("Looking for value : %s\n",key);
-    
-    //look for value
-    if((value = find_key(machine->stored_values,key))!=NULL){
-        kdm_debug("Value found !\n");
-        json_object_object_add(response,"value",json_object_new_string(key));
-        json_object_object_add(response,"numbytes",json_object_new_int(value->value_len));
-        answer_message.payloadLength = value->value_len;
-        memcpy(answer_message.payload,value->value,answer_message.payloadLength);
-    }
+    //TODO look for value
+    if(1){
 
+        json_object_object_add(response,"value",json_object_new_string("value1"));
+        json_object_object_add(response,"numbytes",json_object_new_string("0"));
+        answer_message.payloadLength = 0;
+
+    }
     else {
-        kdm_debug("Value not found\n");
-        nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
-        current_node = nodes;
-        while(current_node != NULL){
-            strcpy(node_string,nodes->ip);
-            strcat(node_string,"/");
-            sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
-            strcat(node_string,"/");
-            strcat(node_string,nodes->nodeID);
-            kdm_debug("Node %s added\n",node_string);
-            json_object_array_add(node_array,json_object_new_string(node_string));
-            current_node = current_node->next;
-        }
+        //TODO Fill with value
         json_object_object_add(response,"nodes",json_object_get(node_array));
+
     }
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
@@ -856,25 +845,39 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 	// Send Kadem_ping to the right node
 	kademPing(machine, _ip, _port);	
 
+	return 0;
+}
+
+int RPCHandlePingRspn(struct kademMachine * machine, int answ, char *addr, int port){
+
 	// Wait for answer from the node and reply to the application OK or NOK
 
 	struct kademMessage answer_message;
-	json_object *header, *argument;
-	char ok[] = "OK";
-	char nok[] = "NOK";
+	json_object *header, *argument;	
+	char* rspn;
 	header = json_object_new_object(); 
 
+	if (answ == 0)
+	{	
+		rspn = "OK";
+	}
+	else
+	{	
+		rspn = "NOK";
+	}
+		
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
    	argument = json_object_new_object();
-   	json_object_object_add(argument,"resp",json_object_new_string(ok));
+   	json_object_object_add(argument,"resp",json_object_new_string(rspn));
     json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
 
 	answer_message.header = header;
 	answer_message.payloadLength = 0;
 
 
-	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0)
+	{
 		return -1;
 	}
 	
@@ -939,11 +942,12 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
 }
 
 
-int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
+int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
+{
 	
 	//TOTEST: look for the appropriate IP address and port into the store_files.
 	char* value=(char*)malloc(30);
-	char * temp=(char*)malloc(30);
+	char* temp=(char*)malloc(30);
 	
 	//look for value into the header of message.
 	json_object *argument2;
@@ -952,41 +956,83 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 
 	store_file * result;
 	result = find_key(machine->stored_values, temp);
-	value = result->value;
-
-	//create the payload: "ip_address/port":
-	char* ok = "OK";
-	int leng = strlen(value);
 	
-	char* header2;
+	if (result == NULL) // Send request to the k-nodes the nearest from the key
+	{
+		// Store the query in the machine last_query field
+		machine->latest_query_rpc->message = message;
+		strcpy(machine->latest_query_rpc->ip, addr);
+		machine->latest_query_rpc->port = port;
 
-	struct kademMessage answer_message;
-	json_object *header, *argument;
+		// Search the nearest nodes and store it in store_find_queries machine's field
+		node_details* nearest_nodes;
+		store_file* store_file_temp;
 
-	header = json_object_new_object(); 
+		nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
-	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+		// Send find values request to nearest nodes and increment count
+		machine->store_find_queries->count = 0;
+		while (nearest_nodes != NULL)
+		{
+			kademFindValue(machine, temp, nearest_nodes->ip, nearest_nodes->port);
+			machine->store_find_queries->count = machine->store_find_queries->count + 1;
+		}
 
-   	argument = json_object_new_object();
-   	json_object_object_add(argument,"resp",json_object_new_string(ok));
-	json_object_object_add(argument,"numbytes",json_object_new_int(leng));
-    	json_object_object_add(header,"r",json_object_get(argument));
-
-	answer_message.header = header;
-	strcpy(answer_message.payload,value);
-	kdm_debug("message.payload: %s\n",answer_message.payload);
-	answer_message.payloadLength = leng;
-
-	header2 = json_object_to_json_string(answer_message.header);
-    	
-    	kdm_debug("message: %s\n",header2);
-
-	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
-		return -1;
+		return -2;
 	}
 
-	return 0;
+	else
+	{
+		value = result->value;
+	
+		//create the payload: "ip_address/port":
+		char* ok = "OK";
+		char leng_payload[5];
+		int leng = strlen(value);
+		sprintf(leng_payload,"%d",leng); 
+		
+		char* header2;
+	
+		struct kademMessage answer_message;
+		json_object *header, *argument;
+	
+		header = json_object_new_object(); 
+	
+		json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+	
+   		argument = json_object_new_object();
+   		json_object_object_add(argument,"resp",json_object_new_string(ok));
+		json_object_object_add(argument,"numbytes",json_object_new_string(leng_payload));
+    	json_object_object_add(header,"r",json_object_get(argument));
+	
+		answer_message.header = header;
+		strcpy(answer_message.payload,value);
+		kdm_debug("message.payload: %s\n",answer_message.payload);
+		answer_message.payloadLength = leng;
+	
+		header2 = json_object_to_json_string(answer_message.header);
+    		
+   		kdm_debug("message: %s\n",header2);
+
+		if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0)
+		{
+			return -1;
+		}
+
+		return 0;
+	}
 }
+
+//TODO
+/*// Handle find value answer for RPC and DHT
+int HandleFindValue(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
+{
+	// Search in machine's store_find_queries the corresponding query
+	*/
+	
+
 
 
 int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){

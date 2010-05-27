@@ -74,12 +74,20 @@ struct kademMachine {
     int sock_p2p;
     int port;
     char id[HASH_STRING_LENGTH];
-    struct kademMessage messageBuffer[KADEM_MAX_SEND_BUF_SIZE];
     char tokens[KADEM_MAX_NB_TOKEN][HASH_STRING_LENGTH];
     routing_table routes;
     store_file * stored_values;
+// Nouveaux champs pour handleGet
+	struct message_and_addr * latest_query_rpc;
+	store_file * store_find_queries;
+	store_file * sent_queries;
 };
 
+struct message_and_addr {
+	struct kademMessage * message;
+	char ip[16];
+    int port;
+};
 
 /**
  * Print if in debug mode
@@ -295,6 +303,14 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
  * @return int  0   success
  *              -1  failure
  */
+int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port);
+/**
+ *
+ * @return int  0   value successfully found in local table and returned
+ *              -1  failure
+ *              -2  Value not found in local table and request sent to nearest nodes
+ */
+
 int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
 
 /**
