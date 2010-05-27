@@ -26,8 +26,8 @@ int main(void)
 	char* _key4 = "400";
 	char* _value4 = "bonjour4";
 
-	file1 = create_store_file( _key, _value);
-	file2 = create_store_file(_key2, _value2);
+	file1 = create_store_file( _key, _value, 7);
+	file2 = create_store_file(_key2, _value2, 8);
 	printf("key: %s\n value: %s\n timestamp: %d\n", file1->key, file1->value, file1->timestamp);
 	printf("key2: %s\n value2: %s\n timestamp2: %d\n", file2->key, file2->value, file2->timestamp);
 	
@@ -44,9 +44,9 @@ int main(void)
 	printf("value after deletion: %s\n",file1->value);
 
     printFiles(file1);
-	file3 = create_store_file(_key3, _value3);
+	file3 = create_store_file(_key3, _value3, 8);
 	file1 = insert_to_tail_file(file1, file3);
-	file4 = create_store_file(_key4, _value4);
+	file4 = create_store_file(_key4, _value4, 8);
 	file1 = insert_to_tail_file(file1, file4);
     
     printFiles(file1);
@@ -61,7 +61,7 @@ int main(void)
 	printf("ok\n");
 	sleep(2);
     
-    file4 = create_store_file(_key4, _value4);
+    file4 = create_store_file(_key4, _value4, 8);
 	file1 = insert_to_tail_file(file1, file4);
 
     printFiles(file1);
