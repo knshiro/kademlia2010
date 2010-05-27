@@ -80,7 +80,6 @@ struct kademMachine {
     store_file * stored_values;
 };
 
-
 /**
  * Print if in debug mode
 */

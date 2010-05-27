@@ -11,13 +11,20 @@
 
 //Create a store_file struct
 store_file* create_store_file( char* _key, char* _value, int _value_len){
+    time_t _timestamp;
     store_file* file =malloc(sizeof(store_file));
 
     file->key = malloc((strlen(_key)+1)*sizeof(char));
-    file->value = malloc(_value_len*sizeof(char));
-	strcpy(file->key, _key);
-	memcpy(file->value, _value, _value_len);
-    time_t _timestamp;
+    strcpy(file->key, _key);
+    
+    if(_value_len!=0){
+        file->value = malloc(_value_len*sizeof(char));
+        memcpy(file->value, _value, _value_len);
+    }
+    else {
+        file->value = NULL;
+    }
+    
     _timestamp = time (NULL);
     file->timestamp = _timestamp;
     file->next = NULL;
