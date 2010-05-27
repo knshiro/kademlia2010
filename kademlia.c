@@ -623,7 +623,8 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
     //TODO fix payload + create_store_file
     key = json_object_get_string(json_object_object_get(query_argument,"value"));
     value = message->payload;
-    machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value));
+	int length = strlen(value);
+    machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value,length));
 
 
     header = json_object_new_object(); 
@@ -784,7 +785,8 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	char* data = message->payload;
 
 	store_file* new_value = malloc(sizeof(store_file));
-	new_value = create_store_file(temp, data);
+	int length = strlen(data);
+	new_value = create_store_file(temp, data, length;
 	insert_to_tail_file(machine->stored_values, new_value);
 
 	//Answer
