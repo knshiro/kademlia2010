@@ -358,11 +358,11 @@ char* concatenate(node_details* node){
 	char portt[6];
 	sprintf(portt,"%d",node->port); 
 
-	strcat(result,node->nodeID);
-	strcat(result,delim);
 	strcat(result,node->ip);
 	strcat(result,delim);
 	strcat(result,portt);
+	strcat(result,delim);
+	strcat(result,node->nodeID);
 
 	return result;
 }
@@ -382,15 +382,15 @@ node_details* create_node_from_string(char* concatenated){
 	int port;
 
 	pointer = strtok( buffer, separateur );
-	strcpy(nodeID, pointer);
+	strcpy(ip, pointer);
 	while( pointer != NULL ){
 		// Cherche les autres separateur
 		pointer = strtok(NULL, separateur);
 		if ( pointer != NULL ){
 			if (count==1){
-				strcpy(ip, pointer);
-			}else if (count==2){
 				port = atoi(pointer);
+			}else if (count==2){
+				strcpy(nodeID, pointer);
 			}
 			count++;
 		}
