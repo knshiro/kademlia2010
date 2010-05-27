@@ -1062,73 +1062,29 @@ int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * messa
 
 int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	char * temp=(char*)malloc(30);
-	//look for value into the header of message
+
+	//look for nodeID into the header of message
+	char * temp=(char*)malloc(17);
 	json_object *argument2;
 	argument2 = json_object_object_get(message->header,"a");
 	temp = json_object_get_string(json_object_object_get(argument2,"value"));
 
+	//Look where the node might be in store_file.
 	int bucket_no;
 	bucket_no = find_node_details(machine->id, temp);
 	node_details* find;
 	find = look_for_IP(machine->routes.table[bucket_no], temp);
 
 	char* ok = "OK";
-	char* nok="NOK";
+
 	struct kademMessage answer_message;
 	char* ip_port=(char*)malloc(30*sizeof(char));
 	json_object *header, *argument;
 
-	int count=0;
-	char store[6][30];
+	if (find != NULL){
+		char* ip_port = (char*)malloc((15+6+1+1)*sizeof(char));
+		ip_port = concatenate2(find);
 
-	if (find == NULL){
-		char portt[6];
-		node_details* temp = NULL;
-		temp = machine->routes.table[bucket_no];
-		while(temp!=NULL){
-			strcat(store[count],temp->ip);
-			strcat(store[count],"/");
-			strcat(ip_port,portt);
-			strcat(store[count],portt);
-			temp=temp->next;
-			count++;
-		}
-		if(count<5){
-			temp = NULL;
-			temp = machine->routes.table[bucket_no-1];
-			
-			while(temp!=NULL){
-				bzero(portt,sizeof(port));
-				strcat(store[count],temp->ip);
-				strcat(store[count],"/");
-				sprintf(portt,temp->port);
-				strcat(ip_port,portt);
-				strcat(store[count],portt);
-				temp=temp->next;
-				count++;
-				if(count>4){
-					break;
-				}
-			}
-		}
-		int i=0;
-		header = json_object_new_object(); 
-		json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
-		argument = json_object_new_object();
-		json_object_object_add(argument,"resp",json_object_new_string(ok));
-		for(i;i<count;i++){
-			json_object_object_add(argument,"nodes",json_object_new_string(store[i]));
-		}
-
-
-	}else{
-		strcat(ip_port,find->ip);
-		strcat(ip_port,"/");
-		char portt[6];
-		sprintf(portt,find->port);
-		strcat(ip_port,portt);
-		
 		header = json_object_new_object(); 
 
 		json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
@@ -1137,15 +1093,22 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
    		json_object_object_add(argument,"resp",json_object_new_string(ok));
 		json_object_object_add(argument,"nodes",json_object_new_string(ip_port));
     		json_object_object_add(header,"r",json_object_get(argument));
+
+		answer_message.header = header;
+		answer_message.payloadLength = 0;
+
+		if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+			return -1;
+		}
+		return 0;
 	}
 
-	answer_message.header = header;
-	answer_message.payloadLength = 0;
+	if (find == NULL){
+		
 
-	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
-		return -1;
+
 	}
 
-	return 0;	
+	return 0;		
 }
 
