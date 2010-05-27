@@ -47,6 +47,6 @@ int find_node_details(char* this_node, char* other_node);
 
 int print_routing_table(routing_table);
 
-
+node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find);
 
 #endif

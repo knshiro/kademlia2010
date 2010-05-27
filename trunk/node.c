@@ -265,4 +265,64 @@ int print_routing_table(routing_table r_table){
 	return 0;
 }
 
+//Take this hash and another hash and return the 6 nearest node_details into a chained list.
+node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find){
+
+	int bucket_no;
+	int num_nodes_found=0;
+	int bucket_minus=1;
+	int go_back=1;
+
+	//find the k_bucket where the node should be.
+	bucket_no = find_node_details(this_node, node_to_find);
+
+	//look for the node into the bucket
+	node_details* find=NULL;
+	find = look_for_IP(routes->table[bucket_no], node_to_find);
+
+	//if the node is found
+	if (find != NULL){
+		result = find;
+		return find;
+	}
+	else{
+		node_details* look_into=NULL;
+		look_into = routes->table[bucket_no];
+
+		//temp= node_details inserted into the weird bucket.
+		node_details* temp;
+		
+		while(num_nodes_found<6){
+			if(look_into != NULL){
+				//insert the ip/port/nodeID into temporary values.
+				temp = create_node_details(temp, look_into->ip, look_into->port, look_into->nodeID);	
+				result = insert_to_tail(result,temp);
+				look_into = look_into->next;
+				num_nodes_found++;
+				printf("test\n");
+				print_nodes(result,-1);
+			}
+			if(look_into == NULL){
+				if(bucket_no - bucket_minus < 0 && go_back == 1){
+					go_back = 0;
+					bucket_minus = 1;
+					look_into=routes->table[bucket_no+1];
+				}
+				if(go_back == 1){
+					printf("bucket_no-bucket_minus: %i\n",bucket_no-bucket_minus);
+					look_into = routes->table[bucket_no-bucket_minus];
+					printf("test2\n");
+					bucket_minus++;
+				}else{
+					printf("bucket_no-bucket_minus: %i\n",bucket_no+bucket_minus);
+					look_into = routes->table[bucket_no + bucket_minus];
+					bucket_minus++;
+				}
+			}
+		}
+	}
+	return result;
+}
+
+
 
