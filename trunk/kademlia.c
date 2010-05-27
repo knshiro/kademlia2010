@@ -825,7 +825,7 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 
 	// Extract value from KademMessage
 	char* hash_value;	
-	hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
+	hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
 
 	// Use hash value and MachineID to find the right node_details using find_node_details and look_for_id functions
 	int bucket_val;
@@ -969,7 +969,7 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 		store_file* store_file_temp;
 
 		nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
-		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(node_details));
 		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
 		// Send find values request to nearest nodes and increment count
