@@ -876,7 +876,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	store_file* new_value = malloc(sizeof(store_file));
 	int length = strlen(data);
 	new_value = create_store_file(temp, data, length);
-	insert_to_tail_file(machine->stored_values, new_value);
+	insert_to_tail_file(machine->stored_values, new_value); //Value stored.
 
 	//Answer
 	struct kademMessage answer_message;
@@ -896,7 +896,22 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
 		return -1;
-	}
+	}   //Answered to the RPC.
+
+	// Store the query in the machine last_query field. Store the data?
+	json_object *argument3;
+	char* temp1;
+	char* temp2;
+	argument3 = json_object_object_get(message->header,"a");
+	temp1 = json_object_get_string(json_object_object_get(argument3,"value"));
+	temp2 = json_object_get_string(json_object_object_get(message->header,"q"));
+	strcpy(machine->latest_query_rpc.query, temp2);
+	strcpy(machine->latest_query_rpc.value, temp1);		
+	strcpy(machine->latest_query_rpc.ip, addr);   //useless because we already answered.
+	machine->latest_query_rpc.port = port;
+	
+	//Send a GET.
+	
 	
 	return 0;
 }
@@ -1224,6 +1239,19 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
         }
 
         if (find == NULL){
+		
+		// Store the query in the machine last_query field
+		json_object *argument3;
+		char* temp1;
+		char* temp2;
+		argument3 = json_object_object_get(message->header,"a");
+		temp1 = json_object_get_string(json_object_object_get(argument3,"value"));
+		temp2 = json_object_get_string(json_object_object_get(message->header,"q"));
+
+		strcpy(machine->latest_query_rpc.query, temp2);
+		strcpy(machine->latest_query_rpc.value, temp1);		
+		strcpy(machine->latest_query_rpc.ip, addr);
+		machine->latest_query_rpc.port = port;
                 
 
 

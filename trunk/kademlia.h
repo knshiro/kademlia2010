@@ -87,6 +87,7 @@ struct kademMachine {
 	struct message_and_addr latest_query_rpc;
 	store_file * store_find_queries;
 	store_file * sent_queries;
+//
 };
 
 
