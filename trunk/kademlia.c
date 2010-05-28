@@ -369,13 +369,11 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	
-	// TODO
-	/*store_file* query;
+	store_file* query;
 	char * head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
-	*/
-
+	insert_to_tail_file(machine->sent_queries, query);
+	
     return ret;
 }
 
@@ -446,6 +444,12 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     json_object_put(header);
     json_object_put(argument);
 
+	// Store Query in sent_queries
+	store_file* query;
+	char * head = json_object_to_json_string(message.header);
+	query = create_store_file( transactionId, head, strlen(head));
+	insert_to_tail_file(machine->sent_queries, query);	
+	
     return ret;
 
 }
@@ -534,6 +538,12 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
     json_object_put(header);
     json_object_put(argument);
+
+	// Store Query in sent_queries
+	store_file* query;
+	char * head = json_object_to_json_string(message.header);
+	query = create_store_file( transactionId, head, strlen(head));
+	insert_to_tail_file(machine->sent_queries, query);
 
     return ret;
 
@@ -638,6 +648,12 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
     json_object_put(header);
     json_object_put(argument);
+
+	// Store Query in sent_queries
+	store_file* query;
+	char * head = json_object_to_json_string(message.header);
+	query = create_store_file( transactionId, head, strlen(head));
+	insert_to_tail_file(machine->sent_queries, query);
 
     return ret;
 }
@@ -1011,12 +1027,12 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
 		// Send find values request to nearest nodes and increment count
-	char* header2;
-
-	struct kademMessage answer_message;
-	json_object *header, *argument;
-
-	header = json_object_new_object(); 
+		machine->store_find_queries->count = 0;
+		while (nearest_nodes != NULL)
+		{
+			kademFindValue(machine, temp, nearest_nodes->ip, nearest_nodes->port);
+			machine->store_find_queries->count = machine->store_find_queries->count + 1;
+		}
 
 		return -2;
 	}
@@ -1067,7 +1083,25 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 /*// Handle find value answer for RPC and DHT
 int HandleFindValue(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
 {
-	// Search in machine's store_find_queries the corresponding query
+	// Search in machine's store_find_queries the corresponding list of nodes (by hash)
+	  //Find the sent request corresponding to the answer in machine's sent_queries (by transactionID)
+	char* temp;
+	char* temp2;
+	store_file * result;
+	store_file * result2;
+	temp = json_object_object_get_string(message->header,"t");
+	result = find_key(sent_queries, temp); //result->value is a kademMessage
+	  //Find the query with the hash (value of sent query)
+	json_object *argument2;
+	argument2 = json_object_object_get(result->value->header,"a");
+	temp2 = json_object_get_string(json_object_object_get(argument2,"value"));
+	result2 = find_key(store_find_value, temp2); //temp2 is the hash of the searched value
+	
+	// If rspn no value found
+	  // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
+	  // if Knodes1 != NULL : send get to nodes and count = count + 1
+	  // count = count - 1
+	  // if count = 0 => stop the query and send "not found"
 	*/
 	
 
