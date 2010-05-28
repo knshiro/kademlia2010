@@ -533,17 +533,16 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
 
 int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage * message){
 
-
+ 
 
     return 0; 
 }
 
-int kademFindValue(struct kademMachine * machine, char * value, char *addr, int port){
+int kademFindValue(struct kademMachine * machine, char * value, char* token, char *addr, int port){
 
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * token = "tokenabc1", *head;     //TODO create a real token
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
 	store_file* query;
 
@@ -986,10 +985,10 @@ int startKademlia(struct kademMachine * machine){
 
 int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-	//TOTEST: store the value (into the store_file?).
+	//TODO: store the value (into the store_file?).
 	//look for value into the header of message.
 	int length;
-    const char * temp;
+   	const char * temp;
 	json_object *argument2, *argument3;
 	store_file* new_value;
 	char *data, *temp1, *temp2; 
@@ -997,21 +996,22 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	json_object *header, *argument;
 	char ok[] = "OK";
    
-    data = message->payload;
-    length = strlen(data);
-    argument2 = json_object_object_get(message->header,"a");
+    	data = message->payload;
+    	length = strlen(data);
+    	argument2 = json_object_object_get(message->header,"a");
+	//TEMP: value to store
 	temp = json_object_get_string(json_object_object_get(argument2,"value"));
 	new_value = create_store_file(temp, data, length);
 	insert_to_tail_file(machine->stored_values, new_value); //Value stored.
 
-    //Answer
-    header = json_object_new_object(); 
+    	//Answer to the RPC
+   	header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
    	argument = json_object_new_object();
    	json_object_object_add(argument,"resp",json_object_new_string(ok));
-    json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+   	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
 
 	answer_message.header = header;
 	answer_message.payloadLength = 0;
@@ -1020,10 +1020,11 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
 		return -1;
 	}   //Answered to the RPC.
-    json_object_put(header);
-    json_object_put(argument);
+    
+	json_object_put(header);
+    	json_object_put(argument);
 
-	// Store the query in the machine last_query field. Store the data?
+	//Store the query in the machine last_query field. Store the data? Useless?
 	argument3 = json_object_object_get(message->header,"a");
 	temp1 = json_object_get_string(json_object_object_get(argument3,"value"));
 	temp2 = json_object_get_string(json_object_object_get(message->header,"q"));
@@ -1032,10 +1033,29 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	strcpy(machine->latest_query_rpc.ip, addr);   //useless because we already answered.
 	machine->latest_query_rpc.port = port;
 
-    
+	//find the nearest nodes.
+	node_details* nearest_nodes;
+	store_file* store_file_temp;
+	//store the query GET into "store_find_queries".
+	nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
+	store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+	insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
-	//Send a GET.
-	
+	//Create a token for this query.
+	char token[HASH_SIGNATURE_LENGTH+1];    
+	generateTransactionId(token, machine->id);
+	store_file* store_token;
+	store_token = create_store_file(store_token, NULL, 0);
+	insert_to_tail_file(machine->token_sent, store_token);
+
+	// Send find values request to nearest nodes and increment count
+	store_token->count = 0;
+	while (nearest_nodes != NULL){
+		kademFindValue(machine, temp, token, nearest_nodes->ip, nearest_nodes->port);
+		store_file_temp->count++;
+	}
+
+
 	
 	return 0;
 }
@@ -1172,7 +1192,7 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 	json_object *argument2;
 	argument2 = json_object_object_get(message->header,"a");
 	temp = json_object_get_string(json_object_object_get(argument2,"value"));
-
+	
 	store_file * result;
 	result = find_key(machine->stored_values, temp);
 	
