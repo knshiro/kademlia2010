@@ -83,11 +83,15 @@ struct kademMachine {
     char tokens[KADEM_MAX_NB_TOKEN][HASH_STRING_LENGTH];
     routing_table routes;
     store_file * stored_values;
-// Nouveaux champs pour handleGet
+// New fields for handleGet
 	struct message_and_addr latest_query_rpc;
 	store_file * store_find_queries;
 	store_file * sent_queries;
-//
+//Fields for StoreValue
+	//key=token/ value=NULL. Enable to check if the GET the DHT received has been issued by a STORE_VALUE.
+	store_file* token_sent;	
+	//store tokens from GET to check that the DHT received a GET before a PUT. key=token/ value=NULL
+	store_file* token_rec;
 };
 
 
@@ -221,7 +225,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
  * @return int  0   success
  * -1  failure
  */
-int kademFindValue(struct kademMachine * machine, char * value, char *dst_addr, int dst_port);
+int kademFindValue(struct kademMachine * machine, char * value, char* token, char *dst_addr, int dst_port);
 
 /**
  * Called by the message listener and handle a FIND_VALUE request
