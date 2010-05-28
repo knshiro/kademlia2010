@@ -65,9 +65,9 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     char id[HASH_STRING_LENGTH+1]; 
 
 	// Init latest_query_rpc
-	machine->latest_query_rpc.query = "";
-	machine->latest_query_rpc.value = "";
-	machine->latest_query_rpc.ip = "";
+	strcpy(machine->latest_query_rpc.query, "");
+	strcpy(machine->latest_query_rpc.value, "");
+	strcpy(machine->latest_query_rpc.ip, "");
 	machine->latest_query_rpc.port = 0;
 
 
@@ -1020,9 +1020,17 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 	if (result == NULL) // Send request to the k-nodes the nearest from the key
 	{
 		// Store the query in the machine last_query field
-		machine->latest_query_rpc->message = message;
-		strcpy(machine->latest_query_rpc->ip, addr);
-		machine->latest_query_rpc->port = port;
+		json_object *argument3;
+		char* temp1;
+		char* temp2;
+		argument3 = json_object_object_get(message->header,"a");
+		temp1 = json_object_get_string(json_object_object_get(argument3,"value"));
+		temp2 = json_object_get_string(json_object_object_get(message->header,"q"));
+
+		strcpy(machine->latest_query_rpc.query, temp2);
+		strcpy(machine->latest_query_rpc.value, temp1);		
+		strcpy(machine->latest_query_rpc.ip, addr);
+		machine->latest_query_rpc.port = port;
 
 		// Search the nearest nodes and store it in store_find_queries machine's field
 		node_details* nearest_nodes;
@@ -1097,11 +1105,6 @@ int HandleFindValue(struct kademMachine * machine, struct kademMessage * message
 	store_file * result2;
 	temp = json_object_get_string(message->header,"t");
 	result = find_key(sent_queries, temp); //result->value is a kademMessage
-
-  	  //Look if the query is the latest query from the RPC
-		if (machine.latest_query_rpc->message != NULL)
-		{
-			if(machine->latest_query_rpc
 	
 	  //Find the query with the hash (value of sent query)
 	json_object *argument2;
@@ -1109,15 +1112,28 @@ int HandleFindValue(struct kademMachine * machine, struct kademMessage * message
 	temp2 = json_object_get_string(json_object_object_get(argument2,"value"));
 	result2 = find_key(store_find_value, temp2); //temp2 is the hash of the searched value
 	
+	//Look if the query is the latest query from the RPC
+		if (strcpy(machine->latest_query_rpc.query, "") == 0)
+		{
+			if((strcpy(machine->latest_query_rpc.query, "get") == 0 ) && (strcpy(machine->latest_query_rpc.value, temp2) == 0)
+			{
+				// Answer to the RPC with the found value
+			}
+
 	// If rspn no value found
 	  // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
 	  // if Knodes1 != NULL : send get to nodes and count = count + 1
 	  // count = count - 1
 	  // if count = 0 => stop the query and send "not found"
+			// if put in RPC
 
+	// If value found
+		// store value
+		// check if for RPC and send to RPC
+		// else nothing
 
-}	*/
-
+}	
+*/
 
 
 int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
