@@ -63,7 +63,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     unsigned int buf_len;
     char signature[HASH_SIGNATURE_LENGTH];
     char id[HASH_STRING_LENGTH+1]; 
-    
+
+	// Init latest_query_rpc
+	machine->latest_query_rpc.query = "";
+	machine->latest_query_rpc.value = "";
+	machine->latest_query_rpc.ip = "";
+	machine->latest_query_rpc.port = 0;
+
 
     machine->stored_values = NULL;
 
@@ -1089,8 +1095,14 @@ int HandleFindValue(struct kademMachine * machine, struct kademMessage * message
 	char* temp2;
 	store_file * result;
 	store_file * result2;
-	temp = json_object_object_get_string(message->header,"t");
+	temp = json_object_get_string(message->header,"t");
 	result = find_key(sent_queries, temp); //result->value is a kademMessage
+
+  	  //Look if the query is the latest query from the RPC
+		if (machine.latest_query_rpc->message != NULL)
+		{
+			if(machine->latest_query_rpc
+	
 	  //Find the query with the hash (value of sent query)
 	json_object *argument2;
 	argument2 = json_object_object_get(result->value->header,"a");
@@ -1102,8 +1114,9 @@ int HandleFindValue(struct kademMachine * machine, struct kademMessage * message
 	  // if Knodes1 != NULL : send get to nodes and count = count + 1
 	  // count = count - 1
 	  // if count = 0 => stop the query and send "not found"
-	*/
-	
+
+
+}	*/
 
 
 

@@ -78,13 +78,14 @@ struct kademMachine {
     routing_table routes;
     store_file * stored_values;
 // Nouveaux champs pour handleGet
-	struct message_and_addr * latest_query_rpc;
+	struct message_and_addr latest_query_rpc;
 	store_file * store_find_queries;
 	store_file * sent_queries;
 };
 
 struct message_and_addr {
-	struct kademMessage * message;
+	char query[50];
+	char value[50];
 	char ip[16];
     int port;
 };
