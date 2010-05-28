@@ -11,6 +11,8 @@
 #include <ctype.h>
 
 
+#define ALPHA_NEAREST 2        
+
 //node_details structure
 typedef struct _node_details node_details;
 struct _node_details
