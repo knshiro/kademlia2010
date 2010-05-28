@@ -847,10 +847,11 @@ int startKademlia(struct kademMachine * machine){
         if(ret_select <0){
             perror("Select :");
             return 1;
-        }
+        				}
         //If timed out do refreshing functions
         else if (ret_select == 0){
-        }
+        						
+			}
         //If received a message
         else{
 
@@ -863,7 +864,57 @@ int startKademlia(struct kademMachine * machine){
                     perror("Couldnt' receive from socket");
                 }
                 message = kademUdpToMessage(udpPacket,num_read);
+
+				// Retrieve ip and port from sending node
+                from_port = ntohs(from.sin_port);
+                from_addr = inet_ntoa(from.sin_addr);                
+                kdm_debug("Receive message from: %s (%d)\n",from_addr,from_port);
+
+                // Determine the type of the message 
+                buffer = json_object_get_string(json_object_object_get(message.header,"y"));
+                // Message is a query
+                if (strcmp(buffer,KADEM_QUERY) == 0){
+
+                    // Determine the type of the query
+                    buffer = json_object_get_string(json_object_object_get(message.header,KADEM_QUERY));
+					if (strcmp(buffer,"print_routing_table") == 0){
+                        RPCHandlePrintRoutingTable(machine, &message, from_addr, from_port);  
+                    	}  
+                    if (strcmp(buffer,"print_object_ids") == 0){
+						RPCHandlePrintObjects(machine, &message, from_addr, from_port); 
+                    	}                
+                    if (strcmp(buffer,"ping") == 0){
+                        RPCHandlePing(machine, &message, from_addr, from_port);  
+                    	}                
+                    if (strcmp(buffer,"kill_node") == 0){
+                        RPCHandleKillNode(machine, &message, from_addr, from_port);  
+                    	}                
+                    if (strcmp(buffer,"put") == 0){
+                        RPCHandleStoreValue(machine, &message, from_addr, from_port);  
+                   	 	}
+					if (strcmp(buffer,"get") == 0){
+                        RPCHandleFindValue_local(machine, &message, from_addr, from_port);  
+                    	}
+					if (strcmp(buffer,"find_node") == 0){
+                        RPCHandleFindNode(machine, &message, from_addr, from_port);  
+                    	}
+					       
+                }
+
+                // Message is an answer
+                else if (strcmp(buffer,KADEM_ANSWER) == 0){
+                }
+
+                // Message is an error
+                else if (strcmp(buffer,KADEM_ERROR) == 0){
+                }
+
+                // Message type is unknown
+                else{
+                }
             }
+        
+	
 
 
             //#####################################
