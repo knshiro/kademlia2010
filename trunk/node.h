@@ -52,6 +52,7 @@ void free_node(node_details* node);
 node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find);
 
 char* concatenate(node_details* node);
+char* concatenate2(node_details* node);
 node_details* create_node_from_string(char* concatenated);
 
 #endif
