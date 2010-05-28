@@ -68,6 +68,12 @@ struct kademMessage {
     char payload[KADEM_MAX_PAYLOAD_SIZE];    // Payload of packet
 };
 
+struct message_and_addr {
+	char query[50];
+	char value[50];
+	char ip[16];
+    int port;
+};
 
 struct kademMachine {
     int sock_local_rpc;
@@ -83,12 +89,6 @@ struct kademMachine {
 	store_file * sent_queries;
 };
 
-struct message_and_addr {
-	char query[50];
-	char value[50];
-	char ip[16];
-    int port;
-};
 
 /**
  * Print if in debug mode
