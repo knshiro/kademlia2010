@@ -867,28 +867,30 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 	//TOTEST: store the value (into the store_file?).
 	//look for value into the header of message.
-	char * temp=(char*)malloc(30);
-	json_object *argument2;
-	argument2 = json_object_object_get(message->header,"a");
+	int length;
+    const char * temp;
+	json_object *argument2, *argument3;
+	store_file* new_value;
+	char *data, *temp1, *temp2; 
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+	char ok[] = "OK";
+   
+    data = message->payload;
+    length = strlen(data);
+    argument2 = json_object_object_get(message->header,"a");
 	temp = json_object_get_string(json_object_object_get(argument2,"value"));
-	char* data = message->payload;
-
-	store_file* new_value = malloc(sizeof(store_file));
-	int length = strlen(data);
 	new_value = create_store_file(temp, data, length);
 	insert_to_tail_file(machine->stored_values, new_value); //Value stored.
 
-	//Answer
-	struct kademMessage answer_message;
-	json_object *header, *argument;
-	char* ok = "OK";
-	header = json_object_new_object(); 
+    //Answer
+    header = json_object_new_object(); 
 
 	json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
 
    	argument = json_object_new_object();
    	json_object_object_add(argument,"resp",json_object_new_string(ok));
-    	json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
+    json_object_object_add(header,KADEM_ANSWER,json_object_get(argument));
 
 	answer_message.header = header;
 	answer_message.payloadLength = 0;
@@ -897,11 +899,10 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
 		return -1;
 	}   //Answered to the RPC.
+    json_object_put(header);
+    json_object_put(argument);
 
 	// Store the query in the machine last_query field. Store the data?
-	json_object *argument3;
-	char* temp1;
-	char* temp2;
 	argument3 = json_object_object_get(message->header,"a");
 	temp1 = json_object_get_string(json_object_object_get(argument3,"value"));
 	temp2 = json_object_get_string(json_object_object_get(message->header,"q"));
@@ -909,7 +910,9 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	strcpy(machine->latest_query_rpc.value, temp1);		
 	strcpy(machine->latest_query_rpc.ip, addr);   //useless because we already answered.
 	machine->latest_query_rpc.port = port;
-	
+
+    
+
 	//Send a GET.
 	
 	
@@ -1037,7 +1040,7 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
 }
 
 
-int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
+int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage * message, char * addr, int port)
 {
 	
 	//TOTEST: look for the appropriate IP address and port into the store_files.
@@ -1076,11 +1079,11 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
 		// Send find values request to nearest nodes and increment count
-		machine->store_find_queries->count = 0;
+		store_file_temp->count = 0;
 		while (nearest_nodes != NULL)
 		{
 			kademFindValue(machine, temp, nearest_nodes->ip, nearest_nodes->port);
-			machine->store_find_queries->count = machine->store_find_queries->count + 1;
+			store_file_temp->count++;
 		}
 
 		return -2;
