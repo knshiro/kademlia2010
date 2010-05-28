@@ -31,7 +31,7 @@ typedef store_file* stored_values;
 store_file* create_store_file( char* _key, char* _value, int _value_len);
 void delete_store_file(store_file* store_file);
 stored_values insert_to_tail_file(stored_values stored_values, store_file* store_file);
-stored_values verify_key(stored_values values, store_file* file);
+stored_values delete_key(stored_values values, char* key);
 stored_values delete_head_file(stored_values stored_values);
 stored_values clean(stored_values values, int age);
 store_file* find_key(stored_values values, char* key);
