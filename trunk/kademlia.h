@@ -309,7 +309,7 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
  * @return int  0   success
  *              -1  failure
  */
-int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port);
+int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char * addr,int port);
 /**
  *
  * @return int  0   value successfully found in local table and returned
