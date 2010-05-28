@@ -354,6 +354,8 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     int ret;
     json_object *header, *argument;
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+	store_file* query;
+    char * head;
 
     generateTransactionId(transactionId,machine->id);
 
@@ -375,8 +377,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
+	head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
 	insert_to_tail_file(machine->sent_queries, query);
 	
@@ -414,12 +415,31 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
 }
 
 int kademHandlePong(struct kademMachine *machine, struct kademMessage *message, char* ip, int port){
-    const char *transactionId;
-    json_object *header = message->header;
+    
+    kdm_debug(">>>> Handle pong\n");
+    
+    const char *transactionId, *id, *rpc_query_type;
+    json_object *header = message->header, *response, *rpc_header;
+    struct kademMessage rpc_message;
 
     transactionId = json_object_get_string(json_object_object_get(header,"t"));
+    id = json_object_get_string(json_object_object_get(response,"id"));
+    insert_into_contact_table(&machine->routes,machine->id,id,ip,port); 
     delete_key(machine->sent_queries, transactionId); 
 
+    response = json_object_object_get(header,"r");
+    if(strcmp(machine->latest_query_rpc.query,KADEM_PING)){
+        if(strcmp(machine->latest_query_rpc.value,id)==0){
+            strcpy(machine->latest_query_rpc.query,"");
+            rpc_header = json_object_new_object();
+            json_object_object_add(rpc_header,"resp",json_object_new_string("OK"));
+            rpc_message.header = rpc_header;
+            kademSendMessage(machine->sock_local_rpc, &rpc_message, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
+            json_object_put(rpc_header);
+        }
+    }
+
+    kdm_debug("<<<< Handle pong\n");
     return 0; 
 }
 
@@ -429,6 +449,8 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     int ret;
     json_object *header, *argument;
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+	store_file* query;
+    char * head;
 
     generateTransactionId(transactionId,machine->id);
 
@@ -451,8 +473,7 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
+	head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
 	insert_to_tail_file(machine->sent_queries, query);	
 	
@@ -521,8 +542,9 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char * token = "tokenabc1";     //TODO create a real token
+    char * token = "tokenabc1", *head;     //TODO create a real token
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+	store_file* query;
 
     generateTransactionId(transactionId,machine->id);
 
@@ -546,8 +568,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
+	head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
 	insert_to_tail_file(machine->sent_queries, query);
 
@@ -631,6 +652,8 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     int ret;
     json_object *header, *argument;
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+	store_file* query;
+    char * head;
 
     generateTransactionId(transactionId,machine->id);
 
@@ -656,8 +679,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
+	head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
 	insert_to_tail_file(machine->sent_queries, query);
 
@@ -688,34 +710,32 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
     }
     
     if(found){
-    //TODO fix payload + create_store_file
-    key = json_object_get_string(json_object_object_get(query_argument,"value"));
-    value = message->payload;
-	int length = strlen(value);
-    machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value,length));
+        //fix payload + create_store_file
+        key = json_object_get_string(json_object_object_get(query_argument,"value"));
+        value = message->payload;
+        int length = strlen(value);
+        machine->stored_values = insert_to_tail_file(machine->stored_values, create_store_file(key,value,length));
+
+        header = json_object_new_object(); 
+        json_object_object_add(header, "t",json_object_new_string(transactionId));
+
+        json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
+
+        response = json_object_new_object();
+        json_object_object_add(response,"id",json_object_new_string(machine->id));
+        json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
 
 
-    header = json_object_new_object(); 
-    json_object_object_add(header, "t",json_object_new_string(transactionId));
+        answer_message.header = header;
+        answer_message.payloadLength = 0;
 
-
-    json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
-
-    response = json_object_new_object();
-    json_object_object_add(response,"id",json_object_new_string(machine->id));
-    json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
-    
-    
-    answer_message.header = header;
-    answer_message.payloadLength = 0;
-
-    ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
-    json_object_put(header);
-    json_object_put(response);
+        ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
+        json_object_put(header);
+        json_object_put(response);
     }
     else {
-       //TODO fix ret value
-       ret = kademSendError(machine, transactionId,KADEM_ERROR_STORE,KADEM_ERROR_STORE_VALUE,addr,port); 
+        //fix ret value
+        ret = kademSendError(machine, transactionId,KADEM_ERROR_STORE,KADEM_ERROR_STORE_VALUE,addr,port); 
     }
     return ret;
 
