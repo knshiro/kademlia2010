@@ -367,6 +367,22 @@ char* concatenate(node_details* node){
 	return result;
 }
 
+//Operations on node struct  ip/port.
+char* concatenate2(node_details* node){
+
+	char* result = (char*)malloc((15+6+1+1)*sizeof(char));
+	char* delim= "/";
+	char portt[6];
+	sprintf(portt,"%d",node->port); 
+
+	strcat(result,node->ip);
+	strcat(result,delim);
+	strcat(result,portt);
+
+	return result;
+}
+
+
 node_details* create_node_from_string(char* concatenated){
 	
 	node_details* result;
