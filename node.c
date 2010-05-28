@@ -417,3 +417,32 @@ node_details* create_node_from_string(char* concatenated){
 }
 
 
+//Delete the node whose nodeID is nodeID
+node_details* delete_node(node_details* node, char *nodeID){
+
+    node_details* temp;
+    node_details* temp2;
+    temp = node;
+
+    if(node->next == NULL)
+    {
+        fflush(stdout);
+    }
+    else {
+        while(temp->next != NULL)
+        {
+            temp2 = temp->next;
+            if(strcmp(temp->next->nodeID, nodeID)==0)
+            {
+                temp->next = temp->next->next;
+                free_node(temp2);
+            }
+            temp = temp->next;
+            if(temp == NULL){
+                break;
+            }
+        }
+    }
+    return node;
+}
+
