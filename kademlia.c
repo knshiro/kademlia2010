@@ -62,9 +62,10 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     struct hostent *server;
     unsigned int buf_len;
     char signature[HASH_SIGNATURE_LENGTH];
-    char id[HASH_STRING_LENGTH]; 
+    char id[HASH_STRING_LENGTH+1]; 
     
 
+    machine->stored_values = NULL;
 
     //####################################
     // Create first socket for local RPC #
@@ -143,7 +144,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 
     //Hash
     md5_buffer(buffer,buf_len,signature);
-    md5_sig_to_string(signature, id, HASH_STRING_LENGTH);
+    md5_sig_to_string(signature, id, HASH_STRING_LENGTH+1);
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
@@ -311,7 +312,7 @@ int generateTransactionId(char * transactionId, char * id){
 
     time_t now;
     int len;
-    char string_time[32],buffer[HASH_STRING_LENGTH], buffer2[2*HASH_STRING_LENGTH],signature[HASH_SIGNATURE_LENGTH];
+    char string_time[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
    
     //Retrieve time
     now = time(NULL);
@@ -321,7 +322,7 @@ int generateTransactionId(char * transactionId, char * id){
 
     //Hash time
     md5_buffer(string_time,len,signature);
-    md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH);
+    md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH+1);
     kdm_debug("Time hashed: %s\n", buffer);
   
     //Hash time + id
@@ -329,7 +330,7 @@ int generateTransactionId(char * transactionId, char * id){
     strcat(buffer2,id);
     len = strlen(buffer2);
     md5_buffer(buffer2,len,signature);
-    md5_sig_to_string(signature, transactionId, HASH_STRING_LENGTH);
+    md5_sig_to_string(signature, transactionId, HASH_STRING_LENGTH+1);
     
     kdm_debug("Transaction id generated: %s\n", transactionId);
 
@@ -346,7 +347,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH]; 
+    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
 
     generateTransactionId(transactionId,machine->id);
 
@@ -368,11 +369,13 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     json_object_put(argument);
 
 	// Store Query in sent_queries
-	store_file* query;
+	
+	// TODO
+	/*store_file* query;
 	char * head = json_object_to_json_string(message.header);
 	query = create_store_file( transactionId, head, strlen(head));
-	insert_to_tail_file(machine->sent_queries, query);
-	
+	*/
+
     return ret;
 }
 
@@ -407,7 +410,12 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
 }
 
 int kademHandlePong(struct kademMachine *machine, struct kademMessage *message){
+    const char *transactionId;
+    json_object *header = message->header;
 
+
+    transactionId = json_object_get_string(json_object_object_get(header,"t"));
+    delete_key(machine->pinged_nodes, transactionId); 
 
     return 0; 
 }
@@ -417,7 +425,7 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH]; 
+    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
 
     generateTransactionId(transactionId,machine->id);
 
@@ -439,12 +447,6 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     json_object_put(header);
     json_object_put(argument);
 
-	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
-	query = create_store_file( transactionId, head, strlen(head));
-	insert_to_tail_file(machine->sent_queries, query);	
-	
     return ret;
 
 }
@@ -455,9 +457,9 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     int ret;
     json_object *header, *response, *response_array;
     const char * transactionId;
+    node_details* nodes, *current_node;
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
-
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -466,10 +468,20 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     response = json_object_new_object();
     json_object_object_add(response,"id",json_object_new_string(machine->id));
 
-    response_array = json_object_new_array();
-    //TODO implement find nodes
-
-    json_object_object_add(response,"nodes",json_object_get(response_array)); 
+    node_array = json_object_new_array();
+    //find nodes
+    nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
+    current_node = nodes;
+    while(current_node != NULL){
+        strcpy(node_string,nodes->ip);
+        strcat(node_string,"/");
+        sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
+        strcat(node_string,"/");
+        strcat(node_string,nodes->nodeID);
+        json_object_array_add(node_array,json_object_new_string(node_string));
+        current_node = current_node->next;
+    }
+    json_object_object_add(response,"nodes",json_object_get(node_array));
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
 
@@ -479,7 +491,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     ret = kademSendMessage(machine->sock_p2p, &answer_message, addr, port);
     json_object_put(header);
     json_object_put(response);
-    json_object_put(response_array);
+    json_object_put(node_array);
 
     return ret;
 
@@ -497,7 +509,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     int ret;
     json_object *header, *argument;
     char * token = "tokenabc1";     //TODO create a real token
-    char transactionId[HASH_SIGNATURE_LENGTH]; 
+    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
 
     generateTransactionId(transactionId,machine->id);
 
@@ -520,12 +532,6 @@ int kademFindValue(struct kademMachine * machine, char * value, char *addr, int 
     json_object_put(header);
     json_object_put(argument);
 
-	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
-	query = create_store_file( transactionId, head, strlen(head));
-	insert_to_tail_file(machine->sent_queries, query);
-
     return ret;
 
 }
@@ -534,11 +540,16 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     struct kademMessage answer_message;
     int ret;
-    json_object *header, *response, *node_array;
-    const char * transactionId; 
-    char * token = "tokenabc1";     //TODO create a real token
-
+    json_object *header, *response, *node_array, *query;
+    const char * transactionId, *key, *token;
+    store_file * value; 
+    char node_string[HASH_STRING_LENGTH+15+6+3+1];
+    node_details* nodes, *current_node;
+    
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
+    query = json_object_object_get(message->header,"a");
+    key = json_object_get_string(json_object_object_get(query,"value"));
+    token = json_object_get_string(json_object_object_get(query,"token"));
 
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
@@ -551,18 +562,31 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     answer_message.payloadLength = 0;
 
     node_array = json_object_new_array();
-    //TODO look for value
-    if(1){
-
-        json_object_object_add(response,"value",json_object_new_string("value1"));
-        json_object_object_add(response,"numbytes",json_object_new_string("0"));
-        answer_message.payloadLength = 0;
-
+    kdm_debug("Looking for value : %s\n",key);
+    
+    //look for value
+    if((value = find_key(machine->stored_values,key))!=NULL){
+        kdm_debug("Value found !\n");
+        json_object_object_add(response,"value",json_object_new_string(key));
+        json_object_object_add(response,"numbytes",json_object_new_int(value->value_len));
+        answer_message.payloadLength = value->value_len;
+        memcpy(answer_message.payload,value->value,answer_message.payloadLength);
     }
-    else {
-        //TODO Fill with value
-        json_object_object_add(response,"nodes",json_object_get(node_array));
 
+    else {
+        kdm_debug("Value not found\n");
+        nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
+        current_node = nodes;
+        while(current_node != NULL){
+            strcpy(node_string,nodes->ip);
+            strcat(node_string,"/");
+            sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
+            strcat(node_string,"/");
+            strcat(node_string,nodes->nodeID);
+            json_object_array_add(node_array,json_object_new_string(node_string));
+            current_node = current_node->next;
+        }
+        json_object_object_add(response,"nodes",json_object_get(node_array));
     }
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
@@ -587,7 +611,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH]; 
+    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
 
     generateTransactionId(transactionId,machine->id);
 
@@ -611,12 +635,6 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
     json_object_put(header);
     json_object_put(argument);
-
-	// Store Query in sent_queries
-	store_file* query;
-	char * head = json_object_to_json_string(message.header);
-	query = create_store_file( transactionId, head, strlen(head));
-	insert_to_tail_file(machine->sent_queries, query);
 
     return ret;
 }
@@ -679,6 +697,7 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
 }
 
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message){
+    
     return 0;
 }
 
@@ -989,12 +1008,12 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
 		// Send find values request to nearest nodes and increment count
-		machine->store_find_queries->count = 0;
-		while (nearest_nodes != NULL)
-		{
-			kademFindValue(machine, temp, nearest_nodes->ip, nearest_nodes->port);
-			machine->store_find_queries->count = machine->store_find_queries->count + 1;
-		}
+	char* header2;
+
+	struct kademMessage answer_message;
+	json_object *header, *argument;
+
+	header = json_object_new_object(); 
 
 		return -2;
 	}
@@ -1042,30 +1061,12 @@ int RPCHandleFindValue_local(struct kademMachine * machine, struct kademMessage 
 }
 
 //TODO
-// Handle find value answer for RPC and DHT
-/*int HandleFindValue(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
+/*// Handle find value answer for RPC and DHT
+int HandleFindValue(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
 {
-	// Search in machine's store_find_queries the corresponding list of nodes (by hash)
-	  //Find the sent request corresponding to the answer in machine's sent_queries (by transactionID)
-	char* temp;
-	char* temp2;
-	store_file * result;
-	store_file * result2;
-	temp = json_object_object_get_string(message->header,"t");
-	result = find_key(sent_queries, temp); //result->value is a kademMessage
-	  //Find the query with the hash (value of sent query)
-	json_object *argument2;
-	argument2 = json_object_object_get(result->value->header,"a");
-	temp2 = json_object_get_string(json_object_object_get(argument2,"value"));
-	result2 = find_key(store_find_value, temp2); //temp2 is the hash of the searched value
-	
-	// If rspn no value found
-	  // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
-	  // if Knodes1 != NULL : send get to nodes and count = count + 1
-	  // count = count - 1
-	  // if count = 0 => stop the query and send "not found"
+	// Search in machine's store_find_queries the corresponding query
 	*/
-	  
+	
 
 
 

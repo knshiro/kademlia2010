@@ -22,7 +22,7 @@
 #define KADEM_MAX_PAYLOAD_SIZE          4096
 #define KADEM_MAX_SEND_BUF_SIZE         8
 #define KADEM_MAX_NB_TOKEN              50
-#define HASH_STRING_LENGTH              32+1
+#define HASH_STRING_LENGTH              32
 #define HASH_SIGNATURE_LENGTH           16
 
 /*Timeouts*/
@@ -73,7 +73,7 @@ struct kademMachine {
     int sock_local_rpc;
     int sock_p2p;
     int port;
-    char id[HASH_STRING_LENGTH];
+    char id[HASH_STRING_LENGTH+1];
     char tokens[KADEM_MAX_NB_TOKEN][HASH_STRING_LENGTH];
     routing_table routes;
     store_file * stored_values;
@@ -183,7 +183,7 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
  * @return int  0   success
  * -1  failure
  */
-int kademHandlePong(struct kademMachine *machine, struct kademMessage *message);
+int kademHandlePong(struct kademMachine *machine, struct kademMessage *message, char *ip, int port);
 
 
 /**

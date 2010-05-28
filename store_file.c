@@ -55,7 +55,7 @@ stored_values insert_to_tail_file(stored_values values, store_file* file)
 
     if(values != NULL)
     {
-        values = verify_key(values, file);
+        values = delete_key(values, file->key);
         while(temp->next != NULL)
         {
             temp = temp->next;
@@ -73,7 +73,7 @@ stored_values insert_to_tail_file(stored_values values, store_file* file)
 /*
 //Go through the stored_values to store the last store_file at the end of the list
 // Return the pointer to the head of the stored_values.
-stored_values verify_key(stored_values values, store_file* file)
+stored_values delete_key(stored_values values, store_file* file)
 {
 store_file* temp;
 store_file* temp2;
@@ -122,7 +122,7 @@ return values;
  * @param file file containing the value to be deleted
  * @return the pointer to the head of the list cleaned.
  */
-stored_values verify_key(stored_values values, store_file* file){
+stored_values delete_key(stored_values values, char *key){
 
     store_file* temp;
     store_file* temp2;
@@ -136,7 +136,7 @@ stored_values verify_key(stored_values values, store_file* file){
         while(temp->next != NULL)
         {
             temp2 = temp->next;
-            if(strcmp(temp->next->value, file->value)==0)
+            if(strcmp(temp->next->key, key)==0)
             {
                 temp->next = temp->next->next;
                 delete_store_file(temp2);
