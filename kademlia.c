@@ -409,13 +409,12 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
 
 }
 
-int kademHandlePong(struct kademMachine *machine, struct kademMessage *message){
+int kademHandlePong(struct kademMachine *machine, struct kademMessage *message, char* ip, int port){
     const char *transactionId;
     json_object *header = message->header;
 
-
     transactionId = json_object_get_string(json_object_object_get(header,"t"));
-    delete_key(machine->pinged_nodes, transactionId); 
+    delete_key(machine->sent_queries, transactionId); 
 
     return 0; 
 }
@@ -455,12 +454,16 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
 
     struct kademMessage answer_message;
     int ret;
-    json_object *header, *response, *response_array;
-    const char * transactionId;
+    json_object *header, *response, *node_array, *query;
+    const char * transactionId, *key;
     node_details* nodes, *current_node;
+    char * node_string;
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
+    query = json_object_object_get(message->header,"a");
+    key = json_object_get_string(json_object_object_get(query,"value"));
+    
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_ANSWER));
