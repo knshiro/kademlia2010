@@ -355,14 +355,13 @@ void free_node(node_details* node){
 
 
 //Operations on node struct.
-char* concatenate(node_details* node){
+char* concatenate(node_details* node, char* result){
 
-	char* result = (char*)malloc((HASH_STRING_LENGTH+15+6+2+1)*sizeof(char));
-	char* delim= "/";
+    char delim[] = "/";
 	char portt[6];
 	sprintf(portt,"%d",node->port); 
 
-	strcat(result,node->ip);
+	strcpy(result,node->ip);
 	strcat(result,delim);
 	strcat(result,portt);
 	strcat(result,delim);
@@ -372,14 +371,13 @@ char* concatenate(node_details* node){
 }
 
 //Operations on node struct  ip/port.
-char* concatenate2(node_details* node){
+char* concatenate2(node_details* node, char * result){
 
-	char* result = (char*)malloc((15+6+1+1)*sizeof(char));
-	char* delim= "/";
+	char delim[]= "/";
 	char portt[6];
 	sprintf(portt,"%d",node->port); 
 
-	strcat(result,node->ip);
+	strcpy(result,node->ip);
 	strcat(result,delim);
 	strcat(result,portt);
 
