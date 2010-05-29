@@ -10,8 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 
-
-#define ALPHA_NEAREST 2        
+       
 
 //node_details structure
 typedef struct _node_details node_details;
@@ -52,7 +51,7 @@ int find_node_details(char* this_node, char* other_node);
 int print_routing_table(routing_table);
 void free_k_bucket(node_details* k_bucket);
 void free_node(node_details* node);
-node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find);
+node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find, int number_nodes);
 //concatenate ip/port/nodeID
 char* concatenate(node_details* node);
 //concatenate ip/port
