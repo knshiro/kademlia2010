@@ -187,7 +187,7 @@ node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, 
 	else{
 		int i = count_nodes_details(bucket);
 		//if there are less than 6 node_details in the node_details *, insert it at the tail.
-		if(i<6)	{
+		if(i<length_bucket){
 			temp = NULL;
 			temp = create_node_details(temp, ip, port, nodeID);
 			bucket = insert_to_tail(bucket, temp);
@@ -479,6 +479,12 @@ node_details* insert_acc_distance(node_details* bucket, node_details* node_to_in
 	node_details* temp2 = NULL;
 	temp = bucket;
 	
+
+	int i = count_nodes_details(bucket);
+	if(i>5){
+		return bucket;
+	}
+
 	if(temp==NULL){
 		return node_to_insert;
 	}
