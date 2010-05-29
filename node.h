@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
-
-       
+ 
+#define length_bucket      6
 
 //node_details structure
 typedef struct _node_details node_details;
