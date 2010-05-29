@@ -192,7 +192,7 @@ node_details * move_node_details(node_details * bucket, char* nodeID, char* ip, 
 			bucket = insert_to_tail(bucket, temp);
 			return bucket;
 		}
-		//If the bucket is full, say it!
+		//If the bucket is full, do nothing!
 		else{
 			return bucket2;
 		}
@@ -444,5 +444,18 @@ node_details* delete_node(node_details* node, char *nodeID){
         }
     }
     return node;
+}
+
+
+//return the node_details if it exists, NULL otherwise.
+node_details* return_node(routing_table* table, char* this_nodeID, char* nodeID){
+
+	node_details* result;
+	int bucket_no;
+
+	bucket_no = find_node_details(this_nodeID, nodeID);
+	result = look_for_IP(table->table[bucket_no], nodeID);
+
+	return result;
 }
 
