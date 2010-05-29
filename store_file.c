@@ -213,6 +213,7 @@ void printFiles(stored_values values)
 
 int print_values(stored_values values)
 {
+    printf("Printing stored values\n");
 	stored_values temp = values;
 	while (temp != NULL)
 	{

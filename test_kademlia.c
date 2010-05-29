@@ -23,12 +23,12 @@ int main(int argc, char *argv[]){
     int port = 4000;
 
     _kdm_debug = 1;
-    initMachine(&machine,6000,7000);
+    initMachine(&machine,6000,7000, "caca");
     kdm_debug("Machine inited, id: %s\n", machine.id);
  
     printf("%d\n",sizeof(test)); 
    
-    /*
+    
     //###############################
     // Test of udpToMessage         #
     //###############################
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
     kdm_debug("<<<<Handle Find Node\n\n");
     
     kdm_debug(">>>>Find value\n");
-    kademFindValue(&machine,"value1",addr,port);
+    kademFindValue(&machine,"value1","token1", addr,port);
     kdm_debug("<<<<Find value\n\n");
    
     kdm_debug(">>>>Handle Find value\n");
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
    
 
     printf("\nSecond test: value found\n");
-    machine.stored_values = insert_to_tail_file(machine.stored_values,create_store_file("@john","127.0.0.1/4000"));    
+    machine.stored_values = insert_to_tail_file(machine.stored_values,create_store_file("@john","127.0.0.1/4000",15));    
     kademHandleFindValue(&machine,&message,addr,port);
 
     kdm_debug("<<<<Handle Find value\n\n");
@@ -102,15 +102,15 @@ int main(int argc, char *argv[]){
     kademStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
     kdm_debug("<<<<Store value\n\n");
 
-   /* kdm_debug(">>>>Store value\n");
-    kademHandleStoreValue(&machine,"token1","value1","127.0.0.1/5000",14,addr,port);
-    kdm_debug("<<<<Store value\n\n");*/
+    kdm_debug(">>>>Store value\n");
+    kademHandleStoreValue(&machine,&message,addr,port);
+    kdm_debug("<<<<Store value\n\n");
    
-   /* 
+    
     kdm_debug(">>>>Send error\n");
     kademSendError(&machine,"trans1",KADEM_ERROR_GENERIC,KADEM_ERROR_GENERIC_VALUE,addr,port);
     kdm_debug("<<<<Send error\n\n");
-  */  
+  
 
 	//###############################
     // Test of RPCHandlePing        #
