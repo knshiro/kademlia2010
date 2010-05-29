@@ -18,7 +18,7 @@ struct _node_details
 {
     char* ip;
 	int port;
-	int timeout;
+	int count;
 	char* nodeID;
 	time_t timestamp;
    	node_details* next;

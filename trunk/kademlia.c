@@ -171,14 +171,14 @@ int kademMaintenance(struct kademMachine * machine){
         bucket = machine->routes.table[i];
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
         {
-            if (bucket->timeout == 2)
+            if (bucket->count == 2)
             {
                 delete_node(machine->routes.table[i], bucket->nodeID);
             } 
             else 
             {
                 kademPing(machine, bucket->ip, bucket->port);
-                bucket->timeout = bucket->timeout + 1; 
+                bucket->count++;
                 bucket->timestamp = bucket->timestamp-2;
             }
             bucket = bucket->next;
@@ -731,18 +731,21 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
             current_nodes = (node_details*)find_query->value;
             
+
+
+
             for(i=0; i < json_object_array_length(response_content_nodes); i++) {
                 obj_loop = json_object_array_get_idx(response_content_nodes, i);
                 insert_to_tail(new_nodes,create_node_from_string(json_object_to_json_string(obj_loop)));
             }
-
-
+            
+            
             // Send find values request to nearest nodes and increment count
             machine->store_find_queries->count--;
             while (current_nodes != NULL)
             {
                 kademFindValue(machine, sent_query_value,token, current_nodes->ip, current_nodes->port);
-                machine->store_find_queries->count = machine->store_find_queries->count + 1;
+                machine->store_find_queries->count++;
                 current_nodes = current_nodes -> next;
             }
         } else //Todo Handle error protocole 
