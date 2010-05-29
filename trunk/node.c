@@ -460,3 +460,60 @@ node_details* return_node(routing_table* table, char* this_nodeID, char* nodeID)
 	return result;
 }
 
+
+//Insert node_details in a ordered bucket according to the distance.
+node_details* insert_acc_distance(node_details* bucket, node_details* node_to_insert, char* nodeID){
+
+	//Conpute the distance between the key(nodeID) and the nodeID of the node_to_insert.
+	printf("nodeID to insert: %s\n",node_to_insert->nodeID);
+	char* distance_to_insert = (char*)malloc((strlen(nodeID)+1)*sizeof(char));
+	char* distance_to_compare = (char*)malloc((strlen(nodeID)+1)*sizeof(char));
+	distance_to_insert = XORmetrics (distance_to_insert, nodeID, node_to_insert->nodeID);
+	printf("distance_to_insert: %s\n",distance_to_insert);
+	int int_to_insert;
+	int int_to_compare;
+	sscanf(distance_to_insert,"%x", &int_to_insert);
+	printf("int: %i\n", int_to_insert);
+	//look where to insert the node_details.
+	node_details* temp = NULL;
+	node_details* temp2 = NULL;
+	temp = bucket;
+	
+	if(temp==NULL){
+		return node_to_insert;
+	}
+	
+	distance_to_compare = XORmetrics (distance_to_compare, nodeID, temp->nodeID);
+	sscanf(distance_to_compare,"%x", &int_to_compare);
+	if(int_to_insert < int_to_compare){
+		node_to_insert->next = bucket;
+		return node_to_insert;
+	}
+	
+	while(temp!=NULL && temp->next!=NULL){
+
+		distance_to_compare = XORmetrics (distance_to_compare, nodeID, temp->next->nodeID);
+		sscanf(distance_to_compare,"%x", &int_to_compare);
+
+		if(int_to_insert <= int_to_compare){
+			if(int_to_insert == int_to_compare){
+				return bucket;
+			}else{
+				//insert the node here.
+				temp2 = temp->next;
+				temp->next = node_to_insert;
+				node_to_insert->next = temp2;
+			}
+		}else{
+			temp = temp->next;
+		}
+	}
+
+	if(temp->next==NULL){
+		temp->next = node_to_insert;
+	}
+
+	return bucket;
+
+}
+

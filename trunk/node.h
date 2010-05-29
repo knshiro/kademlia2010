@@ -62,4 +62,9 @@ node_details* delete_node(node_details* node, char *nodeID);
 //return the node_details if it exists, NULL otherwise.
 node_details* return_node(routing_table* table,char* this_nodeID, char* nodeID);
 
+
+//Insert node_details in a ordered bucket according to the distance.
+node_details* insert_acc_distance(node_details* bucket, node_details* node_to_insert, char* nodeID);
+
+
 #endif
