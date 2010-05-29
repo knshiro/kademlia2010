@@ -268,8 +268,13 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
  *              -1  failure
  */
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message);
-
-
+/**
+ * Called by the HandleFindValue when it knows which node(s) the value has to be sent to.
+ *
+ * @return int  0   success
+ *              -1  failure
+ */
+int kademSendStoreValue(struct kademMachine * machine, node_details* node_to_send, char* value, char* token);
 /*============================================
     RPC communication
   ============================================*/

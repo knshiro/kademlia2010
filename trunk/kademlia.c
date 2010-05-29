@@ -833,10 +833,40 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
 
 }
 
+
 int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessage * message){
     
     return 0;
 }
+
+
+int kademSendStoreValue(struct kademMachine * machine, node_details* node_to_send, char* value, char* token){
+	
+	int i=0;
+	//look for the token into token_sent.
+	store_file* one_token_sent;
+	one_token_sent = find_key(machine->token_sent, token);
+
+	//look how many nodes we send the value to.
+	int number_sent;
+	number_sent = count_nodes_details(node_to_send); 
+
+	node_details* temp=NULL;
+
+	for(i;i<number_sent;i++){
+		kademStoreValue(machine, token, value, one_token_sent->value, strlen(one_token_sent->value), temp->ip, temp->port);
+		temp = temp->next;
+		if(temp = NULL){
+			break;
+		}
+	}
+
+	//delete the one_token_sent in the token_store list.
+	delete_key(machine->token_sent, token);
+
+    	return 0;
+}
+
 
 int startKademlia(struct kademMachine * machine){
     int ret_select, num_read,from_port;
@@ -1138,7 +1168,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 	char token[HASH_SIGNATURE_LENGTH+1];    
 	generateTransactionId(token, machine->id);
 	store_file* store_token;
-	store_token = create_store_file(store_token, NULL, 0);
+	store_token = create_store_file(store_token, message->payload, 0);
 	insert_to_tail_file(machine->token_sent, store_token);
 
 	// Send find values request to nearest nodes and increment count
@@ -1148,8 +1178,6 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 		store_file_temp->count++;
 	}
 
-
-	
 	return 0;
 }
 
