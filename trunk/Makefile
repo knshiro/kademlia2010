@@ -23,7 +23,10 @@ kademlia:    main_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 messaging: messaging.o utils.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
-test_local_rpc: test_local_rpc.o utils.o md5.o
+node: node.o test_node_details.o XORmetrics.o
+	${CC} -o $@ $^ ${LIBS}
+
+test_local_rpc: test_local_rpc.o utils.o md5.o 
 	${CC} -o $@ $^ ${LIBS}
 
 test_store_file: test_store_file.o store_file.o 
