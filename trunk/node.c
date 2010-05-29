@@ -23,6 +23,8 @@ node_details * insert_to_tail(node_details * bucket, node_details* node){
 	//Go through the node_details * to check if it is full
 	node_details* temp = bucket;
 	int i=1;
+	
+	node->count = 0;
 
        	 while(temp != NULL){
            	temp = temp->next;
@@ -268,7 +270,7 @@ int print_routing_table(routing_table r_table){
 }
 
 //Take this hash and another hash and return the alpha(2) nearest node_details into a chained list.
-node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find, int number_nodes){
+node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find){
 
 	int bucket_no;
 	int num_nodes_found=0;
@@ -294,7 +296,7 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 		//temp= node_details inserted into the weird bucket.
 		node_details* temp;
 		
-		while(num_nodes_found<number_nodes){
+		while(num_nodes_found<length_bucket){
 			if(look_into != NULL){
 				//insert the ip/port/nodeID into temporary values.
 				temp = create_node_details(temp, look_into->ip, look_into->port, look_into->nodeID);	
