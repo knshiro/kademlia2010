@@ -86,7 +86,7 @@ node_details* create_node_details(node_details* node, char* _ip, int _port, char
     	_timestamp = time (NULL);
 	node->timestamp = _timestamp;
 	node->next = NULL;
-	node->timeout = 0;
+	node->count = 0;
 
 	return node;
 }
