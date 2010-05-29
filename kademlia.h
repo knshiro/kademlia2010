@@ -22,6 +22,7 @@
 #define KADEM_MAX_PAYLOAD_SIZE          4096
 #define KADEM_MAX_SEND_BUF_SIZE         8
 #define KADEM_MAX_NB_TOKEN              50
+#define KADEM_ALPHA                     2
 #define HASH_STRING_LENGTH              32
 #define HASH_SIGNATURE_LENGTH           16
 
@@ -217,7 +218,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
  * @return int  0   success
  *              -1  failure
  */
-int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage * message);
+int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage * message, char *ip, int port);
 
 
 /**
@@ -243,7 +244,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
  * @return int  0   success
  *              -1  failure
  */
-int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message);
+int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message, char *ip , int port);
 
 /**
  * Send a STORE_VALUE request 
