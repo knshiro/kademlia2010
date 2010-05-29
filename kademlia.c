@@ -165,9 +165,9 @@ int kademMaintenance(struct kademMachine * machine){
     time_t _timestamp;
     int i;
     _timestamp = time (NULL);
+    node_details * bucket;
     for (i=0; i<160; i++)
     {
-        node_details * bucket;
         bucket = machine->routes.table[i];
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
         {
@@ -184,17 +184,21 @@ int kademMaintenance(struct kademMachine * machine){
             bucket = bucket->next;
         }
     }
-    //TODO dans la boucle principale: réinitialiser le timeout à chaque réception de réponse de ping et mettre à jour le timestamp à chaque utilisation du node(réponse à une query ou réception de query)
 
-    //TODO: refresh the queries
+    //TODO dans la boucle principale: mettre à jour le timestamp à chaque utilisation du node(réponse à une query ou réception de query)
+
+    //TOTEST: refresh the queries
     store_file * refreshed_queries;
     refreshed_queries = machine->sent_queries;
     while (refreshed_queries != NULL)
     {
-        //if timestamp < qqch => supprimer la query
+	if(_timestamp - refreshed_queries->timestamp > KADEM_TIMEOUT_REFRESH_QUERY){
+		delete_key(machine->sent_queries, refreshed_queries->key);
+	}
+	refreshed_queries->next;
     }
 
-    //TODO refresh the files stored
+    //TOTEST refresh the files stored
     machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
 
     return 0;
@@ -1478,7 +1482,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
         json_object *header, *argument;
 
         if (find != NULL){
-            char* ip_port = (char*)malloc((15+6+1+1)*sizeof(char));
+            char* ip_port;
             ip_port = concatenate2(find);
 
             header = json_object_new_object(); 
