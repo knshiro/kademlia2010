@@ -26,6 +26,8 @@ int main(void)
 	char* _key4 = "400";
 	char* _value4 = "bonjour4";
 
+    file1 = NULL;
+    print_values(file1);
 	file1 = create_store_file( _key, _value, 7);
 	file2 = create_store_file(_key2, _value2, 8);
 	printf("key: %s\n value: %s\n timestamp: %d\n", file1->key, file1->value, file1->timestamp);
@@ -33,8 +35,9 @@ int main(void)
 	
 	file1 = insert_to_tail_file(file1, file2);
 	printf("key2: %s\n value2: %s\n timestamp2: %d\n", file1->next->key, file1->next->value, file1->next->timestamp);
+    print_values(file1);
 	
-	store_file* find_value = malloc(sizeof(store_file));
+    store_file* find_value = malloc(sizeof(store_file));
 	char* _find_key = "200";
 	find_value = find_key(file1, _find_key);
 	printf("cherche key %s: %s\n", _find_key, find_value->key);

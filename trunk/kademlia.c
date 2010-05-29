@@ -79,6 +79,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     machine->waiting_nodes = NULL;
     machine->token_sent = NULL;
     machine->token_rec = NULL;
+
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         machine->routes.table[i] = NULL;
     }
@@ -164,7 +165,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
-     kdm_debug("id_init: %s\n", machine->id);
+    kdm_debug("id_init: %s\n", machine->id);
 
 
     //#######################################
@@ -174,19 +175,20 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     if(strcmp(peer_addr,"")!=0){
         //Get the host ip
         pointer = strtok(peer_addr, "/");
-        kdm_debug("Host name : %s\n",pointer);
         server = gethostbyname(pointer);
         if (server == NULL) {
             fprintf(stderr,"ERROR, no such host\n");
         }
         else {
             kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
-            pointer = strtok(peer_addr, "/");
-            sprintf(pointer,"%d",&peer_port);
-	  
+            pointer = strtok(NULL, "/");
+            peer_port = atoi(pointer);
+
+            kdm_debug("Port %d\n", peer_port);
             kademPing(machine, inet_ntoa(*((struct in_addr *)server->h_addr)), peer_port );
         }
     }
+    print_values(machine->stored_values);
     kdm_debug(">>>> initMachine\n");
     return 0;
 }
@@ -413,6 +415,7 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
 
     if((sentBytes = sendto(sockfd, udpPacket, messageSize , 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0)
     {
+        kdm_debug("Socket %d, addr %s, port %d, message size %d, size addr %d\n",sockfd,dst_addr, dst_port, messageSize,sizeof(serv_addr));
         perror("Could not send packet!");
         return -1;
     }
@@ -530,13 +533,13 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    
+
     // Store Query in sent_queries
     head = json_object_to_json_string(header);
     query = create_store_file( transactionId, head, strlen(head));
     insert_to_tail_file(machine->sent_queries, query);
-	json_object_put(header);
-	json_object_put(argument);
+    json_object_put(header);
+    json_object_put(argument);
     kdm_debug(">>>> kademPing\n");
     return ret;
 }
@@ -636,7 +639,7 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    
+
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
     query = create_store_file( transactionId, head, strlen(head));
@@ -886,7 +889,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    
+
 
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
@@ -1172,7 +1175,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     memcpy(message.payload,data,data_len); 
 
     ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
-    
+
 
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
@@ -1292,7 +1295,7 @@ int startKademlia(struct kademMachine * machine){
     char udpPacket[KADEM_MAX_PAYLOAD_SIZE+100];
     const char * buffer;
     char * from_addr;
-
+    char cmd[10],arg[50];
 
     from_len = sizeof(struct sockaddr_in);
 
@@ -1303,6 +1306,7 @@ int startKademlia(struct kademMachine * machine){
         // add our descriptors to the set
         FD_SET(machine->sock_local_rpc,&readfds);
         FD_SET(machine->sock_p2p,&readfds);
+        FD_SET(0,&readfds);
 
         // Set timeout
         tv.tv_sec = 1;
@@ -1329,7 +1333,7 @@ int startKademlia(struct kademMachine * machine){
                 {
                     perror("Couldnt' receive from socket");
                 }
-
+                kdm_debug("Received RPC message from %s/%d\n", from_addr, from_port);
                 message = kademUdpToMessage(udpPacket,num_read);
 
                 // Retrieve ip and port from sending node
@@ -1389,6 +1393,7 @@ int startKademlia(struct kademMachine * machine){
                 {
                     perror("Couldnt' receive from socket");
                 }
+                kdm_debug("Received P2P message from %s/%d\n", from_addr, from_port);
                 message = kademUdpToMessage(udpPacket,num_read);
 
                 // Retrieve ip and port from sending node
@@ -1507,7 +1512,36 @@ int startKademlia(struct kademMachine * machine){
                     kademSendError(machine, transID, KADEM_ERROR_PROTOCOL, KADEM_ERROR_PROTOCOL_VALUE, from_addr, from_port);
                     delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries
                 }
-            } 
+            }
+
+            if(FD_ISSET(0, &readfds)) {
+                scanf("%s",cmd,arg);
+                if (strcmp(cmd,"print_routing_table") == 0){
+                    print_routing_table(machine->routes);
+                }  
+                if (strcmp(cmd,"print_object_ids") == 0){
+                    print_values(machine->stored_values);
+                }                
+                if (strcmp(cmd,"ping") == 0){
+                    scanf("%s",cmd,arg);
+                }                
+                if (strcmp(cmd,"kill_node") == 0){
+                }                
+                if (strcmp(cmd,"put") == 0){
+                    scanf("%s",cmd,arg);
+                }
+                if (strcmp(cmd,"get") == 0){
+                    scanf("%s",cmd,arg);
+                }
+                if (strcmp(cmd,"find_node") == 0){
+                    scanf("%s",cmd,arg);
+                }
+                else{
+                    /*const char *transID;
+                    transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                    kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);*/
+                } 
+            }
         }
     }
     kdm_debug("<<<< startKademlia\n");
@@ -1556,12 +1590,12 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     answer_message.header = header;
     answer_message.payloadLength = 0;
 
- 
+
     if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
         return -1;
     }   //Answered to the RPC.
 
-   
+
 
     //Store the query in the machine last_query field. Store the data? Useless?
     argument3 = json_object_object_get(message->header,"a");
@@ -1703,7 +1737,7 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
     kdm_debug(">>>> RPCHandlePrintObjects\n");
     //TOTEST: print objects	
     int check = -1;
-    check = print_routing_table(machine->routes);
+    check = print_values(machine->stored_values);
 
     struct kademMessage answer_message;
     json_object *header, *argument;
