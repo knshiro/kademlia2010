@@ -52,9 +52,14 @@ int print_routing_table(routing_table);
 void free_k_bucket(node_details* k_bucket);
 void free_node(node_details* node);
 node_details* k_nearest_nodes(node_details* result, routing_table* routes, char* this_node, char* node_to_find);
-
+//concatenate ip/port/nodeID
 char* concatenate(node_details* node);
+//concatenate ip/port
 char* concatenate2(node_details* node);
 node_details* create_node_from_string(char* concatenated);
 node_details* delete_node(node_details* node, char *nodeID);
+
+//return the node_details if it exists, NULL otherwise.
+node_details* return_node(routing_table* table,char* this_nodeID, char* nodeID);
+
 #endif
