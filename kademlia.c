@@ -938,7 +938,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             }
                 
         }
-        else //Todo Handle error protocole 
+        else //TODO Handle error protocole 
         {
 
         }
@@ -948,14 +948,6 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
     }
 
     delete_key(machine->sent_queries, transaction_id);
-
-
-    // if Knodes1 != NULL : send get to nodes and count = count + 1
-
-    // count = count - 1
-
-    // if count = 0 => stop the query and send "not found"
-    // if put in RPC
 
     return 0; 
 }
