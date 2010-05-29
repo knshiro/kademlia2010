@@ -38,8 +38,6 @@ const char * const KADEM_ERROR_METHOD_UNKNOWN_VALUE   =    "Method Unknown Error
 const char * const KADEM_ERROR_STORE_VALUE            =    "Unable to store data";
 
 
-
-
 void kdm_debug(const char *msg, ...){
     va_list ap;
     va_start(ap, msg);
@@ -49,13 +47,15 @@ void kdm_debug(const char *msg, ...){
     va_end(ap);
 }
 
-int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p){
+int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p, char *peer_addr){
 
     kdm_debug("<<<< initMachine\n");
     int sockfd;
     struct sockaddr_in local_rpc_addr, p2p_addr;
     int length = sizeof(struct sockaddr_in);
 
+    int i, peer_port;
+    char *pointer;
     char hostname[100]; 
     char buffer[20];
     char port_str[6];
@@ -65,6 +65,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     char signature[HASH_SIGNATURE_LENGTH];
     char id[HASH_STRING_LENGTH+1]; 
 
+
+
     // Init latest_query_rpc
     strcpy(machine->latest_query_rpc.query, "");
     strcpy(machine->latest_query_rpc.value, "");
@@ -73,6 +75,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 
 
     machine->stored_values = NULL;
+    machine->sent_queries = NULL;
+    machine->waiting_nodes = NULL;
+    machine->token_sent = NULL;
+    machine->token_rec = NULL;
+    for(i=0;i<NUMBER_OF_BUCKETS;i++){
+        machine->routes.table[i] = NULL;
+    }
 
     //####################################
     // Create first socket for local RPC #
@@ -155,6 +164,28 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
+
+
+    //#######################################
+    // Try to connect to somebody           #
+    //#######################################
+
+    if(strcmp(peer_addr,"")!=0){
+        //Get the host ip
+        pointer = strtok(peer_addr, "/");
+        kdm_debug("Host name : %s\n",pointer);
+        server = gethostbyname(pointer);
+        if (server == NULL) {
+            fprintf(stderr,"ERROR, no such host\n");
+        }
+        else {
+            kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
+            pointer = strtok(peer_addr, "/");
+            sprintf(pointer,"%d",&peer_port);
+
+            kademPing(machine->sock_p2p, inet_ntoa(*((struct in_addr *)server->h_addr)), peer_port );
+        }
+    }
     kdm_debug(">>>> initMachine\n");
     return 0;
 }
