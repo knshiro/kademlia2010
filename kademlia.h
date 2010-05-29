@@ -161,6 +161,7 @@ int kademSendError(struct kademMachine * machine, const char *transactionId, con
  * Generate a random transactionId and put it in the parameter
  *
  * @param   transactionId   string that will contain the transaction id.
+ * @param   id  string containing a hash (e.g the nodeId) to add more randomness
  * @return  int  0   success
  *              -1  failure
  */
@@ -306,15 +307,9 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
 
 /**
  *
- * @return int  0   success
- *              -1  failure
- */
-int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char * addr,int port);
-/**
- *
  * @return int  0   value successfully found in local table and returned
+ *              1  Value not found in local table and request sent to nearest nodes
  *              -1  failure
- *              -2  Value not found in local table and request sent to nearest nodes
  */
 
 int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
