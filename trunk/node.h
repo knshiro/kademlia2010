@@ -17,8 +17,9 @@
 typedef struct _node_details node_details;
 struct _node_details
 {
-    	char* ip;
+    char* ip;
 	int port;
+	int timeout;
 	char* nodeID;
 	time_t timestamp;
    	node_details* next;
