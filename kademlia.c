@@ -162,6 +162,38 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
 int kademMaintenance(struct kademMachine * machine){
     
     //TODO refresh the k-buckets
+    time_t _timestamp;
+    int i;
+    _timestamp = time (NULL);
+    for (i=0; i<160; i++)
+    {
+        node_details * bucket;
+        bucket = machine->routes.table[i];
+        while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
+        {
+            if (bucket->timeout == 2)
+            {
+                delete_node(machine->routes.table[i], bucket->nodeID);
+            } 
+            else 
+            {
+                kademPing(machine, bucket->ip, bucket->port);
+                bucket->timeout = bucket->timeout + 1; 
+                bucket->timestamp = bucket->timestamp-2;
+            }
+            bucket = bucket->next;
+        }
+    }
+    //TODO dans la boucle principale: réinitialiser le timeout à chaque réception de réponse de ping et mettre à jour le timestamp à chaque utilisation du node(réponse à une query ou réception de query)
+    
+    //TODO: refresh the queries
+    store_file * refreshed_queries;
+    refreshed_queries = machine->sent_queries;
+    while (refreshed_queries != NULL)
+    {
+    //if timestamp < qqch => supprimer la query
+    }
+    
     //TODO refresh the files stored
     machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
         
@@ -1000,6 +1032,8 @@ int startKademlia(struct kademMachine * machine){
                     transID = json_object_get_string(json_object_object_get(message.header,"t"));
     	            temp = json_object_get_string(json_object_object_get(message.header,"t"));//get transactionID of received msg
   	                result = find_key(machine->sent_queries, temp); //result->value is a string (header of the corresponding sent query
+	                if (result != NULL)
+	                {
 	                // Extract the type of query from the string
 	                sent_query_msg = json_tokener_parse(result->value);
 	                query_type = json_object_get_string(json_object_object_get(sent_query_msg,"q"));
@@ -1024,7 +1058,8 @@ int startKademlia(struct kademMachine * machine){
                        {
                            kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
                        }   
-                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries                   
+                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries    
+                    }               
                 }
     
     
