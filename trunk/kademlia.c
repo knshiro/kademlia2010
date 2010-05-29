@@ -644,96 +644,75 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
 int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message){
 
-    // Search in machine's store_find_queries the corresponding list of nodes (by hash)
-    //Find the sent request corresponding to the answer in machine's sent_queries (by transactionID)
-    int i;
-    const char *transactionId, *sent_query_value, *token;
-    store_file *sent_query, *find_query, *_store_file, *store_file_temp;
-    node_details *new_nodes, *current_nodes;
-    struct kademMessage rpc_msg;
-    json_object *sent_query_msg, *rpc_msg_header, *argument2, *response_content, *response_content_value, *response_content_nodes;
+	// Search in machine's store_find_queries the corresponding list of nodes (by hash)
+	  //Find the sent request corresponding to the answer in machine's sent_queries (by transactionID)
+	const char *temp, *temp2, *token;
+	store_file *result, *result2, *find_queries;
+	store_file* _store_file;
+	json_object *argument2;
+	node_details *found_nodes;
+	json_object * sent_query_msg;
 
-    transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
-    sent_query= find_key(machine->sent_queries, transactionId); //result->value is a kademMessage (result points 
-    //Find the query with the hash (value of sent query)
-    sent_query_msg = json_tokener_parse(sent_query->value);
-    argument2 = json_object_object_get(sent_query_msg,"a");
-    sent_query_value = json_object_get_string(json_object_object_get(argument2,"value"));
-    token = json_object_get_string(json_object_object_get(argument2,"token"));
+	temp = json_object_get_string(json_object_object_get(message->header,"t"));
+	result = find_key(machine->sent_queries, temp); //result->value is a string (header of sent query)
+	
+	  //Find the query with the hash (value of sent query)
+	sent_query_msg = json_tokener_parse(result->value);
+	argument2 = json_object_object_get(sent_query_msg,"a");
+	temp2 = json_object_get_string(json_object_object_get(argument2,"value"));
+	token = json_object_get_string(json_object_object_get(argument2,"token"));
+    result2 = find_key(machine->store_find_queries, temp2); //temp2 is the hash of the searched value
+	
+	if (message->payloadLength > 0) // If value found:
+	{
+		// store value
+		_store_file = create_store_file( temp2, message->payload, message->payloadLength);
+		insert_to_tail_file(machine->stored_values, _store_file);
+		
+		//Look if the query is the latest query from the RPC
+		if (strcpy(machine->latest_query_rpc.query, "") == 0)
+		{
+			if((strcpy(machine->latest_query_rpc.query, "get") == 0 ) && (strcpy(machine->latest_query_rpc.value, temp2) == 0))
+			{
+				// Answer to the get of the RPC
+			}
+			if((strcpy(machine->latest_query_rpc.query, "put") == 0 ) && (strcpy(machine->latest_query_rpc.value, temp2) == 0))
+			{
+				// Answer to the put of the RPC
+			}
+		}
+	}
 
-    //
-    if ((find_query = find_key(machine->store_find_queries, sent_query_value) != NULL)){ //sent_query_value is the hash of the searched value
+	else // If no value found: new set of nodes received
+	{
+	  // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
+		found_nodes = (node_details*)result2->value;
+		
 
-        response_content = json_object_object_get(message->header,"r");
-        response_content_value = json_object_object_get(response_content,"value");
-        response_content_nodes = json_object_object_get(response_content,"nodes");
-        if (!json_object_is_type(response_content_value, json_type_null)) // If value found:
-        {
-            kdm_debug("Value %s found\n", sent_query_value);
-            // store value
-            message->payloadLength = atoi(json_object_get_string(json_object_object_get(response_content,"numbytes")));
-            _store_file = create_store_file( sent_query_value, message->payload, message->payloadLength);
-            insert_to_tail_file(machine->stored_values, _store_file);
+// Search the nearest nodes and store it in store_find_queries machine's field
+		node_details* nearest_nodes;
+		store_file* store_file_temp;
 
-            //Look if the query is the latest query from the RPC
-            if((strcpy(machine->latest_query_rpc.query, "get") == 0 ) && (strcpy(machine->latest_query_rpc.value, sent_query_value) == 0))
-            {
-                // Answer to the get from the RP
-                // Write the header 
-                rpc_msg_header = json_object_new_object();
-                json_object_object_add(rpc_msg_header,"resp",json_object_new_string("OK"));
-                json_object_object_add(rpc_msg_header,"numbytes",json_object_new_int(_store_file->value_len));
-                // Write the message
-                rpc_msg.header = rpc_msg_header;
-                rpc_msg.payloadLength = _store_file->value_len;
-                memcpy(rpc_msg.payload,_store_file,rpc_msg.payloadLength);
-                kademSendMessage(machine->sock_local_rpc, &rpc_msg, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
+		nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+		insert_to_tail_file(machine->store_find_queries, store_file_temp);
 
-            }
-            // Delete the find query
-            delete_key(machine->store_find_queries, sent_query_value);
-        }
+		// Send find values request to nearest nodes and increment count
+		machine->store_find_queries->count = 0;
+		while (nearest_nodes != NULL)
+		{
+			kademFindValue(machine, temp,token, nearest_nodes->ip, nearest_nodes->port);
+			machine->store_find_queries->count = machine->store_find_queries->count + 1;
+			nearest_nodes = nearest_nodes -> next;
+		}
+	}
+	
+	  // if Knodes1 != NULL : send get to nodes and count = count + 1
 
-        else if (!json_object_is_type(response_content_nodes, json_type_null)) // If no value found: new set of nodes received
-        {
-            // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
-            current_nodes = (node_details*)find_query->value;
-            
-            for(i=0; i < json_object_array_length(response_content_nodes); i++) {
-                json_object *obj = json_object_array_get_idx(my_array, i);
-                printf("\t[%d]=%s\n", i, json_object_to_json_string(obj));
-            }
+	  // count = count - 1
 
-            // Search the nearest nodes and store it in store_find_queries machine's field
-            nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
-            store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
-            insert_to_tail_file(machine->store_find_queries, store_file_temp);
-
-            // Send find values request to nearest nodes and increment count
-            machine->store_find_queries->count = 0;
-            while (nearest_nodes != NULL)
-            {
-                kademFindValue(machine, temp,token, nearest_nodes->ip, nearest_nodes->port);
-                machine->store_find_queries->count = machine->store_find_queries->count + 1;
-                nearest_nodes = nearest_nodes -> next;
-            }
-        } else //Todo Handle error protocole 
-        {
-        
-        }
-        json_object_put(response_content);
-        json_object_put(response_content_value);
-        json_object_put(response_content_node);
-    }
-
-    delete_key(
-    
-    // if Knodes1 != NULL : send get to nodes and count = count + 1
-
-    // count = count - 1
-
-    // if count = 0 => stop the query and send "not found"
-    // if put in RPC
+	  // if count = 0 => stop the query and send "not found"
+			// if put in RPC
 
     return 0; 
 }
@@ -1351,7 +1330,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 			nearest_nodes = nearest_nodes -> next;
 		}
 
-		return 1;
+		return -2;
 	}
 
 	else
@@ -1390,6 +1369,12 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 	}
 }
 
+//TODO
+// Handle find value answer for RPC and DHT
+int HandleFindValue(struct kademMachine * machine, struct kademMessage * message, char addr[16], int port)
+{
+}	
+
 
 int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 		
@@ -1418,7 +1403,7 @@ int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * messa
 
 int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-       //look for nodeID into the header of message
+       	//look for nodeID into the header of message
         char * temp=(char*)malloc(17);
         json_object *argument2;
         argument2 = json_object_object_get(message->header,"a");
@@ -1474,7 +1459,25 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
 		machine->latest_query_rpc.port = port;
                 
 
+		// Search the nearest nodes and store it in store_find_queries machine's field
+		node_details* nearest_nodes;
+		store_file* store_file_temp;
 
+		nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+		insert_to_tail_file(machine->store_find_queries, store_file_temp);
+
+		// Send find values request to nearest nodes and increment count
+		store_file_temp->count = 0;
+		while (nearest_nodes != NULL)
+		{
+			kademFindNode(machine, temp, nearest_nodes->ip, nearest_nodes->port);
+			store_file_temp->count++;
+			nearest_nodes = nearest_nodes -> next;
+		}
+
+		return -2;
+		
         }
 
         return 0; 
