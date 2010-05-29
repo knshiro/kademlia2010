@@ -864,9 +864,10 @@ int startKademlia(struct kademMachine * machine){
                 {
                     perror("Couldnt' receive from socket");
                 }
+                
                 message = kademUdpToMessage(udpPacket,num_read);
-
-				// Retrieve ip and port from sending node
+            
+	    		// Retrieve ip and port from sending node
                 from_port = ntohs(from.sin_port);
                 from_addr = inet_ntoa(from.sin_addr);                
                 kdm_debug("Receive message from: %s (%d)\n",from_addr,from_port);
@@ -878,11 +879,11 @@ int startKademlia(struct kademMachine * machine){
 
                     // Determine the type of the query
                     buffer = json_object_get_string(json_object_object_get(message.header,KADEM_QUERY));
-					if (strcmp(buffer,"print_routing_table") == 0){
+	    			if (strcmp(buffer,"print_routing_table") == 0){
                         RPCHandlePrintRoutingTable(machine, &message, from_addr, from_port);  
                     	}  
                     if (strcmp(buffer,"print_object_ids") == 0){
-						RPCHandlePrintObjects(machine, &message, from_addr, from_port); 
+	    				RPCHandlePrintObjects(machine, &message, from_addr, from_port); 
                     	}                
                     if (strcmp(buffer,"ping") == 0){
                         RPCHandlePing(machine, &message, from_addr, from_port);  
@@ -893,21 +894,26 @@ int startKademlia(struct kademMachine * machine){
                     if (strcmp(buffer,"put") == 0){
                         RPCHandleStoreValue(machine, &message, from_addr, from_port);  
                    	 	}
-					if (strcmp(buffer,"get") == 0){
+	   				if (strcmp(buffer,"get") == 0){
                         RPCHandleFindValue(machine, &message, from_addr, from_port);  
                     	}
-					if (strcmp(buffer,"find_node") == 0){
+	   				if (strcmp(buffer,"find_node") == 0){
                         RPCHandleFindNode(machine, &message, from_addr, from_port);  
                     	}
-					       
-                }
+                    else{
+                        const char *transID;
+                        transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                        kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
+                         }					       
+                     }
 
-                // Message type is unknown
-                else{
-                }
-            }
-        
-	
+                 // Message type is unknown
+                 else{
+                     const char *transID; 
+                     transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                     kademSendError(machine, transID, KADEM_ERROR_PROTOCOL, KADEM_ERROR_PROTOCOL_VALUE, from_addr, from_port);
+                     }
+                 }
 
 
             //#####################################
@@ -944,10 +950,14 @@ int startKademlia(struct kademMachine * machine){
                     }                
                     if (strcmp(buffer,KADEM_FIND_VALUE) == 0){
                         kademHandleFindValue(machine, &message, from_addr, from_port);  
-                    }                
-
-                }
-                
+                    }  
+                    else{
+                        const char *transID; 
+                        transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                        kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
+                      }   
+                  }
+                  
 
                     // Message is an answer
                 else if (strcmp(buffer,KADEM_ANSWER) == 0){
@@ -956,27 +966,32 @@ int startKademlia(struct kademMachine * machine){
                 	store_file *result;
                 	json_object * sent_query_msg;
 
-	                temp = json_object_get_string(json_object_object_get(message.header,"t"));//get transactionID of received msg
-	                result = find_key(machine->sent_queries, temp); //result->value is a string (header of the corresponding sent query)
+    	               temp = json_object_get_string(json_object_object_get(message.header,"t"));//get transactionID of received  msg
+  	                result = find_key(machine->sent_queries, temp); //result->value is a string (header of the corresponding   snt query
 	                // Extract the type of query from the string
 	                sent_query_msg = json_tokener_parse(result->value);
 	                query_type = json_object_get_string(json_object_object_get(sent_query_msg,"q"));
 	                
 	                if (strcmp(query_type,KADEM_PING) == 0){
-                        kademHandlePong(machine, &message, from_addr, from_port);  
-                    }                
-                    if (strcmp(query_type,KADEM_STORE) == 0){
-                        kademHandleAnswerStoreValue(machine, &message);  
-                    }                
-                    if (strcmp(query_type,KADEM_FIND_NODE) == 0){
-                        kademHandleAnswerFindNode(machine, &message);  
-                    }                
-                    if (strcmp(query_type,KADEM_FIND_VALUE) == 0){
-                        kademHandleAnswerFindValue(machine, &message);  
-                    }                    
+                           kademHandlePong(machine, &message, from_addr, from_port);  
+                       }                
+                       if (strcmp(query_type,KADEM_STORE) == 0){
+                           kademHandleAnswerStoreValue(machine, &message);  
+                       }                
+                       if (strcmp(query_type,KADEM_FIND_NODE) == 0){
+                           kademHandleAnswerFindNode(machine, &message);  
+                       }                
+                       if (strcmp(query_type,KADEM_FIND_VALUE) == 0){
+                           kademHandleAnswerFindValue(machine, &message);  
+                       } 
+                       else{
+                           const char *transID; 
+                           transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                           kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
+                    }                      
                 }
-
-
+    
+    
                     // Message is an error
                 else if (strcmp(buffer,KADEM_ERROR) == 0){
                     json_object * error_msg;
@@ -1000,13 +1015,22 @@ int startKademlia(struct kademMachine * machine){
                     }
                     if (strcmp(_code,KADEM_ERROR_STORE) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
-                    }                    
+                    }   
+                    else{
+                        const char *transID; 
+                        transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                        kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
+                      }                 
+                  }
+                  
+                      // Message type is unknown
+                else
+                {
+                const char *transID; 
+                transID = json_object_get_string(json_object_object_get(message.header,"t"));
+                kademSendError(machine, transID, KADEM_ERROR_PROTOCOL, KADEM_ERROR_PROTOCOL_VALUE, from_addr, from_port);
                 }
-
-                    // Message type is unknown
-                else{
-                }
-            }
+            } 
         }
     }
 
