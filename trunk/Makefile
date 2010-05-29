@@ -9,7 +9,7 @@ JSON_LIB=$(JSON_DIR)arraylist.o \
 
 
 LIBS = ${JSON_LIB}
-CC = gcc -g
+CC = gcc -g -Wall
 
 
 all:   kademlia test_md5 test_store_file test_local_rpc messaging test

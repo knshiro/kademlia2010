@@ -387,7 +387,7 @@ char* concatenate2(node_details* node, char * result){
 
 node_details* create_node_from_string(char* concatenated){
 	
-	node_details* result;
+	node_details* result = NULL;
 
 	char* pointer;
 	char* separateur = { "/" };
