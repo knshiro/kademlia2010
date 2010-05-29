@@ -29,7 +29,7 @@
 #define KADEM_TIMEOUT_REFRESH_DATA      5*60
 #define KADEM_TIMEOUT_REFRESH_ROUTE     5*60
 #define KADEM_NB_TIMEOUT_REFRESH_ROUTE  2
-
+#define KADEM_TIMEOUT_REFRESH_QUERY     2
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -161,7 +161,6 @@ int kademSendError(struct kademMachine * machine, const char *transactionId, con
  * Generate a random transactionId and put it in the parameter
  *
  * @param   transactionId   string that will contain the transaction id.
- * @param   id  string containing a hash (e.g the nodeId) to add more randomness
  * @return  int  0   success
  *              -1  failure
  */
@@ -312,9 +311,15 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
 
 /**
  *
- * @return int  0   value successfully found in local table and returned
- *              1  Value not found in local table and request sent to nearest nodes
+ * @return int  0   success
  *              -1  failure
+ */
+int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char * addr,int port);
+/**
+ *
+ * @return int  0   value successfully found in local table and returned
+ *              -1  failure
+ *              -2  Value not found in local table and request sent to nearest nodes
  */
 
 int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port);
