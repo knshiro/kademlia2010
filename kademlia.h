@@ -114,7 +114,7 @@ void kdm_debug(const char *msg, ...);
  * @return int  0   success
  *              -1  failure
  */
-int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p);
+int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p, char *peer_addr);
 
 /**
  * 

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
         dhtnode = argv[optind+2];
     }
     
-    initMachine(&machine,localrpcport,dhtport);
-
+    initMachine(&machine,localrpcport,dhtport,dhtnode);
+    startKademlia(&machine);
     return 0;
 }
