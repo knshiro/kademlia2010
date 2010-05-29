@@ -11,12 +11,13 @@
 #include <ctype.h>
  
 #define length_bucket      6
+#define NUMBER_OF_BUCKETS  128
 
 //node_details structure
 typedef struct _node_details node_details;
 struct _node_details
 {
-    char* ip;
+    	char* ip;
 	int port;
 	int count;
 	char* nodeID;
@@ -29,7 +30,7 @@ struct _node_details
 
 typedef struct _routing_table routing_table;
 struct _routing_table{
-	node_details *table[160];
+	node_details *table[NUMBER_OF_BUCKETS];
 };
 
 
@@ -56,6 +57,7 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 char* concatenate(node_details* node,char * result);
 //concatenate ip/port
 char* concatenate2(node_details* node, char * result);
+
 node_details* create_node_from_string(char* concatenated);
 node_details* delete_node(node_details* node, char *nodeID);
 
