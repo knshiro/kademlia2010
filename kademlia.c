@@ -260,7 +260,21 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     }
 
     //TOTEST refresh the files stored
-    machine->stored_values = clean(machine->stored_values,KADEM_TIMEOUT_REFRESH_DATA);
+    machine->stored_values = clean(machine->stored_values, KADEM_TIMEOUT_REFRESH_DATA);
+    machine->stored_values = clean(machine->token_rec,5*KADEM_TIMEOUT_PING);
+    
+
+   //Delete the out of date node that hav count=1 into store_find_queries
+   store_file * temp2;
+   temp2 = machine->store_find_queries;
+   while(temp2 != NULL){
+	if(temp2->count == 1){
+		if(_timestamp - temp2->timestamp > KADEM_TIMEOUT_PING){
+			delete_key(machine->store_find_queries, temp->key);
+		}
+	}
+   	temp2 = temp2->next;
+   }
 
     return 0;
 }
@@ -819,35 +833,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
                 machine->store_find_queries->count++;
                 current_nodes = current_nodes -> next;
             }
-
-            // Research algorithm is finished
-            else {
-                //Look if the query is the latest query from the RPC
-                if(strcpy(machine->latest_query_rpc.query, "get") == 0 )
-                {
-                    // Answer to the get from the RP
-                    // Write the header 
-                    rpc_msg_header = json_object_new_object();
-                    json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));
-
-                    // Write the message
-                    rpc_msg.header = rpc_msg_header;
-                    rpc_msg.payloadLength = 0;
-                    kademSendMessage(machine->sock_local_rpc, &rpc_msg, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
-                }
-                
-                // Look if it was a put query originally
-                if((token_sent = find_key(machine->token_sent,token)) != NULL){
-                    kademSendStoreValue(machine, result_nodes, sent_query_value, token_sent->key);
-                } 
-               
-                // Delete the find query
-                delete_key(machine->store_find_queries, sent_query_value);
-                json_object_put(rpc_msg_header);
-            }
-                
-        }
-        else //TODO Handle error protocole 
+        } else //Todo Handle error protocole 
         {
         
         }
@@ -856,7 +842,14 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
         json_object_put(response_content_nodes);
     }
 
-    delete_key(machine->sent_queries, transaction_id);
+    delete_key(machine->sent_queries, transactionId);
+    
+    // if Knodes1 != NULL : send get to nodes and count = count + 1
+
+    // count = count - 1
+
+    // if count = 0 => stop the query and send "not found"
+    // if put in RPC
 
     return 0; 
 }
