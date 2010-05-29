@@ -19,7 +19,6 @@
 
 
 /* Some sizes */
-#define KADEM_ALPHA                     2
 #define KADEM_MAX_PAYLOAD_SIZE          4096
 #define KADEM_MAX_SEND_BUF_SIZE         8
 #define KADEM_MAX_NB_TOKEN              50
@@ -31,6 +30,7 @@
 #define KADEM_TIMEOUT_REFRESH_ROUTE     5*60
 #define KADEM_NB_TIMEOUT_REFRESH_ROUTE  2
 #define KADEM_TIMEOUT_REFRESH_QUERY     2
+#define KADEM_TIMEOUT_PING              2
 
 /* Message types */
 extern const char * const KADEM_QUERY;   
@@ -88,6 +88,7 @@ struct kademMachine {
 	struct message_and_addr latest_query_rpc;
 	store_file * store_find_queries;
 	store_file * sent_queries;
+	store_file * waiting_nodes;
 //Fields for StoreValue
 	//key=token/ value=NULL. Enable to check if the GET the DHT received has been issued by a STORE_VALUE.
 	store_file* token_sent;	
@@ -119,7 +120,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p)
  * @return int  0   success
  *              -1  failure
  */
-int kademMaintenance(struct kademMachine * machine);
+int kademMaintenance(struct kademMachine * machine, struct kademMessage* message, char* addr, int port);
 
 /**
  * Find a message by transaction id in the message buffer
@@ -242,7 +243,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
  * @return int  0   success
  *              -1  failure
  */
-int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message, char * addr, int port);
+int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessage * message);
 
 /**
  * Send a STORE_VALUE request 
