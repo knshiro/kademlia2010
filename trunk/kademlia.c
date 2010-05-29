@@ -164,6 +164,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     kdm_debug("signature: %s\n", id);
 
     strcpy(machine->id,id);
+     kdm_debug("id_init: %s\n", machine->id);
 
 
     //#######################################
@@ -182,8 +183,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
             kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
             pointer = strtok(peer_addr, "/");
             sprintf(pointer,"%d",&peer_port);
-
-            kademPing(machine->sock_p2p, inet_ntoa(*((struct in_addr *)server->h_addr)), peer_port );
+	  
+            kademPing(machine, inet_ntoa(*((struct in_addr *)server->h_addr)), peer_port );
         }
     }
     kdm_debug(">>>> initMachine\n");
@@ -386,7 +387,6 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
     //First the header
     header = json_object_to_json_string(message->header);
     messageSize += strlen(header);
-    kdm_debug("Header sent:\n%s\n",header);
 
     //If needed include a payload
     if(message->payloadLength>0){
@@ -416,7 +416,7 @@ int kademSendMessage(int sockfd, struct kademMessage *message, char * dst_addr, 
         perror("Could not send packet!");
         return -1;
     }
-    kdm_debug("Packet sent %d bytes (%d header, %d payload)\n", sentBytes, strlen(header),message->payloadLength);
+    kdm_debug("Packet sent %d bytes to addr %s and port %i:\n (%d header, %d payload)  \n", sentBytes, dst_addr,dst_port,strlen(header),message->payloadLength);
     kdm_debug("%s\n", udpPacket);
     free(udpPacket);
 
@@ -486,7 +486,7 @@ int generateTransactionId(char * transactionId, char * id){
     md5_buffer(string_time,len,signature);
     md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH+1);
     kdm_debug("Time hashed: %s\n", buffer);
-
+    kdm_debug("id: %s\n", id);
     //Hash time + id
     strcpy(buffer2,buffer);
     strcat(buffer2,id);
@@ -513,7 +513,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     char transactionId[HASH_SIGNATURE_LENGTH+1]; 
     store_file* query;
     char * head;
-
+    kdm_debug("id_ping: %s\n", machine->id);
     generateTransactionId(transactionId,machine->id);
 
 
@@ -530,14 +530,13 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    json_object_put(header);
-    json_object_put(argument);
-
+    
     // Store Query in sent_queries
-    head = json_object_to_json_string(message.header);
+    head = json_object_to_json_string(header);
     query = create_store_file( transactionId, head, strlen(head));
     insert_to_tail_file(machine->sent_queries, query);
-
+	json_object_put(header);
+	json_object_put(argument);
     kdm_debug(">>>> kademPing\n");
     return ret;
 }
@@ -637,13 +636,14 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    json_object_put(header);
-    json_object_put(argument);
-
+    
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
     query = create_store_file( transactionId, head, strlen(head));
     insert_to_tail_file(machine->sent_queries, query);
+
+    json_object_put(header);
+    json_object_put(argument);
 
     kdm_debug(">>>> kademFindNode\n");
     return ret;
@@ -886,14 +886,15 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
     message.payloadLength = 0;
 
     ret = kademSendMessage(machine->sock_p2p, &message, addr, port);
-    json_object_put(header);
-    json_object_put(argument);
+    
 
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
     query = create_store_file( transactionId, head, strlen(head));
     insert_to_tail_file(machine->sent_queries, query);
 
+    json_object_put(header);
+    json_object_put(argument);
     kdm_debug("<<<< kademFindValue\n");
     return ret;
 
@@ -1171,14 +1172,15 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     memcpy(message.payload,data,data_len); 
 
     ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
-    json_object_put(header);
-    json_object_put(argument);
+    
 
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
     query = create_store_file( transactionId, head, strlen(head));
     insert_to_tail_file(machine->sent_queries, query);
 
+    json_object_put(header);
+    json_object_put(argument);
     kdm_debug("<<<< kademStoreValue\n");
     return ret;
 }
@@ -1554,13 +1556,12 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     answer_message.header = header;
     answer_message.payloadLength = 0;
 
-
+ 
     if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
         return -1;
     }   //Answered to the RPC.
 
-    json_object_put(header);
-    json_object_put(argument);
+   
 
     //Store the query in the machine last_query field. Store the data? Useless?
     argument3 = json_object_object_get(message->header,"a");
@@ -1592,7 +1593,8 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
         kademFindValue(machine, temp, token, nearest_nodes->ip, nearest_nodes->port);
         store_file_temp->count++;
     }
-
+    json_object_put(header);
+    json_object_put(argument);
     kdm_debug("<<<< RPCHandleStoreValue\n");
     return 0;
 }
