@@ -215,6 +215,7 @@ int main(int argc, char *argv[]){
     argument = json_object_new_object();
 
     json_object_object_add(argument,"nodes", array);
+    json_object_object_add(argument,"id",json_object_new_string(node1));
     json_object_object_add(header,"r",json_object_get(argument));
     json_object_object_add(header,"t",json_object_new_string(machine.sent_queries->key));
     kdm_debug("Sent Query key %s\n",machine.sent_queries->key);
@@ -262,7 +263,7 @@ int main(int argc, char *argv[]){
     kdm_debug("Stored values\n");
     print_values(machine.stored_values);
    
-       kdm_debug(">>>>SECOND ROUND\n\n");
+    kdm_debug(">>>>SECOND ROUND\n\n");
 
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Answer Find Value<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
 
