@@ -818,10 +818,31 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
             else {
                 kdm_debug("Node not found\n");
                 node_id = json_object_get_string(json_object_object_get(response_content,"id"));
-                if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)== 0)
+                if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)!= 0)
                 {
                     // Research algorithm is finished
-                    kdm_debug("Look up algorithm finished \n");
+                    find_query = find_key(machine->store_find_queries, sent_query_value);
+                    current_nodes = (node_details*)(find_query->value);
+                    loop_node = current_nodes;
+                    result_nodes = NULL; 
+
+                    //split list in two
+                    while(loop_node != NULL && loop_node->next != NULL && loop_node->next->count < 2 )
+                    {
+                        loop_node = loop_node->next;
+                    }
+                    if(loop_node != NULL)
+                    {
+                        if(loop_node->count < 2)
+                        {
+                            result_nodes = loop_node->next;
+                            loop_node->next = NULL;
+                        } else {
+                            result_nodes = loop_node;
+                            current_nodes = NULL;
+                        }
+                    }
+
                     if (strcpy(machine->latest_query_rpc.query, "find_node") == 0 ){
                         // Answer to the get from the RP
                         // Write the header 
@@ -829,6 +850,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
                         json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));
 
                         loop_node = result_nodes;
+
                         rpc_node_array = json_object_new_array();
                         while(loop_node != NULL){
                             json_object_array_add(rpc_node_array, json_object_new_string(concatenate(loop_node ,node_string)));
@@ -871,7 +893,8 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
     
     node_details *loop_node, *current_nodes, *result_nodes;
     json_object *loop_obj;
-    int i;
+    store_file *find_query2;
+    int i, ret;
 
     // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
 
@@ -900,7 +923,7 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
     }
 
     //Move the new node into the result
-    delete_node(current_nodes, node_id);
+    current_nodes = delete_node(current_nodes, node_id);
 
     kdm_debug("Node deleted\n");
     loop_node = NULL;
@@ -948,23 +971,29 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
             loop_node = loop_node->next;
         }
 
-        // Stick current and result list together
-        loop_node = current_nodes;
-        while(loop_node->next !=NULL){
-            loop_node = loop_node->next;
-        }
-        loop_node->next = result_nodes;
-        insert_to_tail_file(machine->store_find_queries, find_query);
-        kdm_debug("<<<<<< Lookup Round\n");
-        return 1;
+        ret = 1;
     }
     else {
         //Algorithm finished
         kdm_debug("Algorithm finished\n");
-        kdm_debug("<<<<<< Lookup Round\n");
-        return 0;
+        ret = 0;
     }
+    
+    // Stick current and result list together
+    loop_node = current_nodes;
+    while(loop_node->next !=NULL){
+        loop_node = loop_node->next;
+    }
+    loop_node->next = result_nodes;
 
+    find_query->value = (char *)current_nodes;
+ 
+    find_query2 = create_store_file(find_query->key, find_query->value, find_query->value_len); 
+    
+    machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, find_query2);
+
+    kdm_debug("<<<<<< Lookup Round\n");
+    return ret;
 }
 
     
@@ -1152,6 +1181,28 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             // Research algorithm is finished
             if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)== 0)
             {
+                // Research algorithm is finished
+                find_query = find_key(machine->store_find_queries, sent_query_value);
+                current_nodes = (node_details*)(find_query->value);
+                loop_node = current_nodes;
+                result_nodes = NULL; 
+
+                //split list in two
+                while(loop_node != NULL && loop_node->next != NULL && loop_node->next->count < 2 )
+                {
+                    loop_node = loop_node->next;
+                }
+                if(loop_node != NULL)
+                {
+                    if(loop_node->count < 2)
+                    {
+                        result_nodes = loop_node->next;
+                        loop_node->next = NULL;
+                    } else {
+                        result_nodes = loop_node;
+                        current_nodes = NULL;
+                    }
+                }
                 //Look if the query is the latest query from the RPC
                 if(strcpy(machine->latest_query_rpc.query, "get") == 0 )
                 {
