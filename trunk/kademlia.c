@@ -264,7 +264,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     	    	char ip_to_ping[16];
     	    	char portt[7];
     	    	int port_to_ping;
-    	    	char nodeID_to_ping[17];
+    	    	char nodeID_to_ping[33];
     	    	char delim[] = "/";
     	    	char* waiting_node;
     	    	store_file * waiting;
@@ -282,7 +282,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
             		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
             		if(j<0)
             		{
-                		strcpy(ip_to_ping,Kbucket->ip);
+            		    kdm_debug("ip: %s, port: %i\n", Kbucket->ip, Kbucket->port);
+                		strcpy(ip_to_ping, Kbucket->ip);
                 		port_to_ping = Kbucket->port;
                 		strcpy(nodeID_to_ping, Kbucket->nodeID);
 		    		    //store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value =  IP/port/nodeID
@@ -295,6 +296,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
                 		strcat(waiting_node,hash_value);
                 		waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
                 		insert_to_tail_file(machine->waiting_nodes, waiting);
+                		kdm_debug("ip: %s, port: %i\n", ip_to_ping, port_to_ping);
                 		kademPing(machine, ip_to_ping, port_to_ping);
             		}
 		        }
