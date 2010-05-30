@@ -224,49 +224,58 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     }
     kdm_debug("	   >>>> Refresh k_buckets\n");
     kdm_debug("	   <<<< Insert the node from the message\n");
-    //Try to insert the node from which the DHT receives a message
-    //Look at the message. 
-    // Extract value from KademMessage
-    char* hash_value;	
-    hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
-    //look for this value into the contact_table.
-    int bucket_val, j;
-    node_details* bucket2;
-    node_details* Kbucket;
+    //Try to insert the node from which the DHT receives a message except if the message is a ping.
+    //Look at the query. 
+	//transactionID a u lieu de query
+	char * query;
+	query = json_object_get_string(json_object_object_get(message,"t"));
+	
+	kdm_debug("query: %s\n", query);
+	if(query == KADEM_PING){
+		//Do nothing
+	}else{
+   		// Extract value from KademMessage
+    		char* hash_value;	
+    		hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
+    		//look for this value into the contact_table.
+    		int bucket_val, j;
+    		node_details* bucket2;
+    		node_details* Kbucket;
 
-    bucket_val = find_node_details(machine->id, hash_value)	;
-    Kbucket = machine->routes.table[bucket_val];
-    bucket2 = look_for_IP(Kbucket, hash_value);
+    		bucket_val = find_node_details(machine->id, hash_value)	;
+    		Kbucket = machine->routes.table[bucket_val];
+    		bucket2 = look_for_IP(Kbucket, hash_value);
 
-    char ip_to_ping[16];
-    int port_to_ping;
-    char nodeID_to_ping[17];
-    char delim[] = "/";
-    char* waiting_node;
-    store_file * waiting;
+    		char ip_to_ping[16];
+    		int port_to_ping;
+    		char nodeID_to_ping[17];
+    		char delim[] = "/";
+    		char* waiting_node;
+    		store_file * waiting;
 
-    if(bucket2 != NULL){
-        //refresh the timestamp
-        bucket2->timestamp = time (NULL);
-    }else{
-        //try to insert into the bucket.
-        j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
-        if(j<0){
-            strcpy(ip_to_ping,Kbucket->ip);
-            port_to_ping = Kbucket->port;
-            strcpy(nodeID_to_ping, Kbucket->nodeID);
+    		if(bucket2 != NULL){
+        		//refresh the timestamp
+       		 	bucket2->timestamp = time (NULL);
+    		}else{
+        		//try to insert into the bucket.
+        		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
+        		if(j<0){
+            		strcpy(ip_to_ping,Kbucket->ip);
+            		port_to_ping = Kbucket->port;
+            		strcpy(nodeID_to_ping, Kbucket->nodeID);
 
-            //store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
-            waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
-            strcpy(waiting_node,addr);
-            strcat(waiting_node,delim);
-            strcat(waiting_node,port);
-            strcat(waiting_node,delim);
-            strcat(waiting_node,hash_value);
-            waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
-            insert_to_tail_file(machine->waiting_nodes, waiting);
-            kademPing(machine, ip_to_ping, port_to_ping);
-        }
+            		//store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
+            		waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
+            		strcpy(waiting_node,addr);
+            		strcat(waiting_node,delim);
+            		strcat(waiting_node,port);
+            		strcat(waiting_node,delim);
+            		strcat(waiting_node,hash_value);
+            		waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
+            		insert_to_tail_file(machine->waiting_nodes, waiting);
+            		kademPing(machine, ip_to_ping, port_to_ping);
+        	}
+	}
     }
 
     kdm_debug("	   >>>> Insert the node from the message\n");
@@ -1957,7 +1966,7 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
         kdm_debug("Stored rpc query : type %s, value %s, addr %s, port %d\n", query_type, query_value, addr, port);
 
         // Search the nearest nodes and store it in store_find_queries machine's field
-
+	kdm_debug("Nearest node ->\n");
         nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, query_value);
         kdm_debug("Nearest passed\n");
         if(nearest_nodes != NULL){
