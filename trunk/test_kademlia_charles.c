@@ -133,10 +133,10 @@ int main(int argc, char *argv[]){
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
-    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_PING));
+    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_NODE));
 
     argument = json_object_new_object();
-    json_object_object_add(argument,"value",json_object_new_string("00000000000000000000000000000001"));
+    json_object_object_add(argument,"value",json_object_new_string("00000000000000000000000011000001"));
     json_object_object_add(header,"a",json_object_get(argument));
 
     strcpy(udpPacket,json_object_to_json_string(header));
@@ -241,6 +241,7 @@ int main(int argc, char *argv[]){
         printf("bucket_no: %i\n",bucket_no);
         
         // Remplissage de 127-bucket
+        printf(">>>>>>>>>>>>>> 127-bucket\n\n");
         bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","90000000000000000000000000000000", "127.0.1.1", 1271);
         printf("bucket_no: %i\n",bucket_no);
         bucket = table->table[bucket_no];
@@ -289,7 +290,22 @@ int main(int argc, char *argv[]){
 
         print_nodes(table->table[127],127);
         
+        // Remplissage de bucket 28
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011100001", "127.0.0.254", 500);
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011110001", "127.0.0.255", 501);
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011111001", "127.0.0.255", 501);
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011111101", "127.0.0.255", 501);
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011111111", "127.0.0.255", 501);
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","00000000000000000000000011111112", "127.0.0.255", 501);
+        
+        //insert message into sent_queries
+        char * head;
+        store_file * query;
+        head = json_object_to_json_string(header);
+        query = create_store_file( transactionId, head, strlen(head)+1);
+        machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);
         kademMaintenance(&machine, &message, addr, port);
+        //print_routing_table(machine.routes);
     
     
     

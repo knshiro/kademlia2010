@@ -225,67 +225,82 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     }
     kdm_debug("	   >>>> Refresh k_buckets\n");
     kdm_debug("	   <<<< Insert the node from the message\n");
-    //Try to insert the node from which the DHT receives a message except if the message is a ping.
-    //Look at the query. 
-	//transactionID a u lieu de query
-	char * transactionID;
-	char* query;
-	transactionID = json_object_get_string(json_object_object_get(message->header,"t"));
-	store_file* file;
-	file = find_key(machine->sent_queries, transactionID);
-	if (file!=NULL){
-		json_object *new_obj;
-    		new_obj = json_tokener_parse(file->value);
-		query = json_object_get_string(json_object_object_get(message->header,"q"));		
-		kdm_debug("query: %s\n", query);
-	}	
-	if(query == KADEM_PING){
-		//Do nothing
-	}else{
-   		// Extract value from KademMessage
-    		char* hash_value;	
-    		hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
-    		//look for this value into the contact_table.
-    		int bucket_val, j;
-    		node_details* bucket2;
-    		node_details* Kbucket;
-
-    		bucket_val = find_node_details(machine->id, hash_value)	;
-    		Kbucket = machine->routes.table[bucket_val];
-    		bucket2 = look_for_IP(Kbucket, hash_value);
-
-    		char ip_to_ping[16];
-    		int port_to_ping;
-    		char nodeID_to_ping[17];
-    		char delim[] = "/";
-    		char* waiting_node;
-    		store_file * waiting;
-
-    		if(bucket2 != NULL){
-        		//refresh the timestamp
-       		 	bucket2->timestamp = time (NULL);
-    		}else{
-        		//try to insert into the bucket.
-        		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
-        		if(j<0){
-            			strcpy(ip_to_ping,Kbucket->ip);
-            			port_to_ping = Kbucket->port;
-            			strcpy(nodeID_to_ping, Kbucket->nodeID);
-				
-            			//store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
-            			waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
-            			strcpy(waiting_node,addr);
-            			strcat(waiting_node,delim);
-            			strcat(waiting_node,port);
-            			strcat(waiting_node,delim);
-            			strcat(waiting_node,hash_value);
-            			waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
-            			insert_to_tail_file(machine->waiting_nodes, waiting);
-            			kademPing(machine, ip_to_ping, port_to_ping);
-        		}
-		}
+    if(message != NULL)
+    {    
+        //Try to insert the node from which the DHT receives a message except if the message is a ping.
+        //Look at the query. 
+	    char * transactionID;
+    	char* query;
+	    transactionID = json_object_get_string(json_object_object_get(message->header,"t"));
+	    store_file* file;
+	    file = find_key(machine->sent_queries, transactionID);
+	    if (file!=NULL)
+	    {
+	    	json_object *new_obj;
+        	new_obj = json_tokener_parse(file->value);
+	    	query = json_object_get_string(json_object_object_get(message->header,"q"));		
+	    	kdm_debug("query: %s\n", query);
+	    	
+	        if(strcmp(query, KADEM_PING) == 0)
+	        {
+	            kdm_debug("query: ping => nothing to do\n");
+	    	    //Do nothing
+	        }
+	        else
+	        {
+	            kdm_debug("query: pas ping => enregistrement du node\n");
+   		    // Extract value from KademMessage
+    	    	char* hash_value;
+    	    	hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
+    	    	//look for this value into the contact_table.
+    	    	int bucket_val, j;
+    	    	node_details* bucket2;
+    	    	node_details* Kbucket;
+    
+    	    	bucket_val = find_node_details(machine->id, hash_value)	;
+    	    	Kbucket = machine->routes.table[bucket_val];
+    	    	bucket2 = look_for_IP(Kbucket, hash_value);
+    
+    	    	char ip_to_ping[16];
+    	    	char portt[7];
+    	    	int port_to_ping;
+    	    	char nodeID_to_ping[17];
+    	    	char delim[] = "/";
+    	    	char* waiting_node;
+    	    	store_file * waiting;
+    
+    	    	if(bucket2 != NULL)
+    	    	{
+    	    	    kdm_debug("Node existing in the routing table => MAJ\n");
+            		//refresh the timestamp
+       	    	 	j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
+    	    	}
+    	    	else
+    	    	{
+    	    	    kdm_debug("Node non existing in the routing table => insert it\n");
+            		//try to insert into the bucket.
+            		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
+            		if(j<0)
+            		{
+                		strcpy(ip_to_ping,Kbucket->ip);
+                		port_to_ping = Kbucket->port;
+                		strcpy(nodeID_to_ping, Kbucket->nodeID);
+		    		    //store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value =  IP/port/nodeID
+                		waiting_node = (char*)malloc((16+1+6+1+HASH_STRING_LENGTH+1)*sizeof(char));
+                		strcpy(waiting_node,addr);
+                		strcat(waiting_node,delim);
+                		sprintf(portt,"%d",port); 
+                		strcat(waiting_node,portt);
+                		strcat(waiting_node,delim);
+                		strcat(waiting_node,hash_value);
+                		waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
+                		insert_to_tail_file(machine->waiting_nodes, waiting);
+                		kademPing(machine, ip_to_ping, port_to_ping);
+            		}
+		        }
+    	    }
     	}
-
+    }
     kdm_debug("	   >>>> Insert the node from the message\n");
     kdm_debug("	   <<<< Maintenance: waiting_nodes\n");
 
@@ -308,12 +323,13 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     //TOTEST: Refresh the queries
     store_file * refreshed_queries;
     refreshed_queries = machine->sent_queries;
+    
     while (refreshed_queries != NULL)
     {
         if(_timestamp - refreshed_queries->timestamp > KADEM_TIMEOUT_REFRESH_QUERY){
             delete_key(machine->sent_queries, refreshed_queries->key);
         }
-        refreshed_queries->next;
+        refreshed_queries = refreshed_queries->next;
     }
     kdm_debug("	   >>>> Maintenance: sent_queries\n");
 
@@ -330,7 +346,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     temp2 = machine->store_find_queries;
     while(temp2 != NULL){
         if(temp2->count == 1){
-            if(_timestamp - temp2->timestamp > KADEM_TIMEOUT_PING){
+            if(_timestamp - temp2->timestamp > 2*KADEM_TIMEOUT_PING){
                 delete_key(machine->store_find_queries, temp->key);
             }
         }
