@@ -85,6 +85,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
         machine->routes.table[i] = NULL;
     }
 
+    srand (time (NULL));
+    
     //####################################
     // Create first socket for local RPC #
     //####################################
@@ -509,22 +511,22 @@ int kademSendError(struct kademMachine * machine, const char *transactionId, con
 
 
 int generateTransactionId(char * transactionId, char * id){
-
+    
     kdm_debug(">>>> generateTransactionId\n");
-    time_t now;
+    int random_nb;
     int len;
-    char string_time[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
+    char string_rand[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
 
     //Retrieve time
-    now = time(NULL);
-    sprintf(string_time,"%ld",now);
-    len = strlen(string_time); 
-    kdm_debug("Time : %s (%d chars)\n", string_time, len);
+    random_nb = rand();
+    sprintf(string_rand,"%d",random_nb);
+    len = strlen(string_rand); 
+    kdm_debug("Rand : %s (%d chars)\n", string_rand, len);
 
     //Hash time
-    md5_buffer(string_time,len,signature);
+    md5_buffer(string_rand,len,signature);
     md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH+1);
-    kdm_debug("Time hashed: %s\n", buffer);
+    kdm_debug("Rand hashed: %s\n", buffer);
     kdm_debug("id: %s\n", id);
     //Hash time + id
     strcpy(buffer2,buffer);
@@ -536,6 +538,7 @@ int generateTransactionId(char * transactionId, char * id){
     kdm_debug("Transaction id generated: %s\n", transactionId);
     kdm_debug("<<<< generateTransactionId\n");
     return 0;
+
 }
 
 
@@ -549,7 +552,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     char * head;
     kdm_debug("id_ping: %s\n", machine->id);
@@ -925,7 +928,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     const char * head;
 
@@ -1217,7 +1220,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     char * head;
 
@@ -1693,7 +1696,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     insert_to_tail_file(machine->store_find_queries, store_file_temp);
     kdm_debug(">>>> insert_to_tail_file\n");
     //Create a token for this query.
-    char token[HASH_SIGNATURE_LENGTH+1];    
+    char token[HASH_STRING_LENGTH+1];    
     generateTransactionId(token, machine->id);
    kdm_debug("token: %s\n",token);
     store_file* store_token;
