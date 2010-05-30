@@ -12,9 +12,9 @@ LIBS = ${JSON_LIB}
 CC = gcc -g -Wall
 
 
-all:   kademlia test_md5 test_store_file test_local_rpc messaging test
+all:   kademlia test_md5 test_store_file test_local_rpc messaging test_kademlia test_node
 
-test :   test_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
+test_kademlia :   test_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 	${CC} -o $@ $^ ${LIBS}
 
 kademlia:    main_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
@@ -23,7 +23,7 @@ kademlia:    main_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 messaging: messaging.o utils.o md5.o
 	${CC} -o $@ $^ ${LIBS}
 
-node: node.o test_node_details.o XORmetrics.o
+test_node: node.o test_node_details.o XORmetrics.o
 	${CC} -o $@ $^ ${LIBS}
 
 test_local_rpc: test_local_rpc.o utils.o md5.o 

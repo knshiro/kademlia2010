@@ -173,8 +173,10 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     //#######################################
 
     if(strcmp(peer_addr,"")!=0){
+    kdm_debug("peer_addr: %s\n", peer_addr);
         //Get the host ip
         pointer = strtok(peer_addr, "/");
+        kdm_debug("server : %s\n", pointer);
         server = gethostbyname(pointer);
         if (server == NULL) {
             fprintf(stderr,"ERROR, no such host\n");
@@ -677,6 +679,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
 
     node_array = json_object_new_array();
     //find nodes
+    kdm_debug("Looking for nearest nodes\n");
     nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
     current_node = nodes;
     while(current_node != NULL){

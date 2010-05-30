@@ -262,10 +262,14 @@ int insert_into_contact_table(routing_table* table, char* this_nodeID, char* nod
 //Print the routing table.
 int print_routing_table(routing_table r_table){
 
-	int i=0;
-	for(i;i<159;i++){
+    printf("======Routing table (%d buckets)======\n", NUMBER_OF_BUCKETS); 
+
+	int i;
+	for(i=0;i<NUMBER_OF_BUCKETS;i++){
 		print_nodes(r_table.table[i],i);
 	}
+
+    printf("======Routing table======\n"); 
 	return 0;
 }
 
@@ -292,12 +296,13 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
 	else{
 		node_details* look_into=NULL;
 		look_into = routes->table[bucket_no];
-
+        printf("bucket_no : %d\n", bucket_no);
 		//temp= node_details inserted into the weird bucket.
 		node_details* temp;
 		
 		while(num_nodes_found<length_bucket){
 			if(look_into != NULL){
+                printf("Not null\n");
 				//insert the ip/port/nodeID into temporary values.
 				temp = create_node_details(temp, look_into->ip, look_into->port, look_into->nodeID);	
 				result = insert_to_tail(result,temp);
