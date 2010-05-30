@@ -177,6 +177,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
 
     if(strcmp(peer_addr,"")!=0){
     kdm_debug("peer_addr: %s\n", peer_addr);
+	
         //Get the host ip
         pointer = strtok(peer_addr, "/");
         kdm_debug("server : %s\n", pointer);
@@ -186,7 +187,9 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
         }
         else {
             kdm_debug("Host addr : %s\n",inet_ntoa(*((struct in_addr *)server->h_addr)));
+	    kdm_debug("test\n");
             pointer = strtok(NULL, "/");
+	    
             peer_port = atoi(pointer);
 
             kdm_debug("Port %d\n", peer_port);
@@ -331,7 +334,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     
     while (refreshed_queries != NULL)
     {
-        kdm_debug("boucle while\nnow: %i, timestamp: %i\n", _timestamp, refreshed_queries->timestamp);
+        kdm_debug("loop while\nnow: %i, timestamp: %i\n", _timestamp, refreshed_queries->timestamp);
         if(_timestamp - refreshed_queries->timestamp > KADEM_TIMEOUT_REFRESH_QUERY){
             machine->sent_queries = delete_key(machine->sent_queries, refreshed_queries->key);
         }
@@ -1431,6 +1434,7 @@ int startKademlia(struct kademMachine * machine){
             // Messages from local rpc            #
             //#####################################
             if(FD_ISSET(machine->sock_local_rpc, &readfds)) {
+
                 if((num_read = recvfrom(machine->sock_local_rpc,udpPacket,sizeof(udpPacket),0,(struct sockaddr*) &from, &from_len)) < 0)
                 {
                     perror("Couldnt' receive from socket");
@@ -1453,22 +1457,22 @@ int startKademlia(struct kademMachine * machine){
                     if (strcmp(buffer,"print_routing_table") == 0){
                         RPCHandlePrintRoutingTable(machine, &message, from_addr, from_port);  
                     }  
-                    if (strcmp(buffer,"print_object_ids") == 0){
+                    else if (strcmp(buffer,"print_object_ids") == 0){
                         RPCHandlePrintObjects(machine, &message, from_addr, from_port); 
                     }                
-                    if (strcmp(buffer,"ping") == 0){
+                    else if (strcmp(buffer,"ping") == 0){
                         RPCHandlePing(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,"kill_node") == 0){
+                    else if (strcmp(buffer,"kill_node") == 0){
                         RPCHandleKillNode(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,"put") == 0){
-                        RPCHandleStoreValue(machine, &message, from_addr, from_port);  
+                    else if (strcmp(buffer,"put") == 0){
+                        RPCHandleStoreValue(machine, &message, from_addr, from_port); 
                     }
-                    if (strcmp(buffer,"get") == 0){
+                    else if (strcmp(buffer,"get") == 0){
                         RPCHandleFindValue(machine, &message, from_addr, from_port);  
                     }
-                    if (strcmp(buffer,"find_node") == 0){
+                    else if (strcmp(buffer,"find_node") == 0){
                         RPCHandleFindNode(machine, &message, from_addr, from_port);  
                     }
                     else{
@@ -1661,7 +1665,7 @@ int startKademlia(struct kademMachine * machine){
 //No Segmentation Fault
 int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-    kdm_debug(">>>> RPCHandleStoreValue\n");
+    kdm_debug("\n>>>> RPCHandleStoreValue\n");
     //look for value into the header of message.
     int length;
     const char * temp;
@@ -1679,7 +1683,8 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     temp = json_object_get_string(json_object_object_get(argument2,"value"));
     new_value = create_store_file(temp, data, length);
     kdm_debug("<<<< insert_to_tail_file\n");
-    insert_to_tail_file(machine->stored_values, new_value); //Value stored.
+    machine->stored_values = insert_to_tail_file(machine->stored_values, new_value); //Value stored.  
+    
     kdm_debug(">>>> insert_to_tail_file\n");
     //Answer to the RPC
     header = json_object_new_object(); 
@@ -1753,7 +1758,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     }
     json_object_put(header);
     json_object_put(argument);
-    kdm_debug("<<<< RPCHandleStoreValue\n");
+    kdm_debug("<<<< RPCHandleStoreValue\n\n");
     return 0;
 }
 
@@ -1761,7 +1766,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
 
-    kdm_debug(">>>> RPCHandlePing\n");
+    kdm_debug("\n>>>> RPCHandlePing\n");
     // Extract value from KademMessage
     char* hash_value;	
     hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
@@ -1820,7 +1825,7 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
 	
     }
 
-    kdm_debug("<<<< RPCHandlePing\n");
+    kdm_debug("<<<< RPCHandlePing\n\n");
     return 0;
 }
 
@@ -1899,7 +1904,7 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
     kdm_debug(">>>> RPCHandlePrintObjects\n");
     //TOTEST: print objects	
     int check = -1;
-    check = print_values(machine->stored_values);
+    printFiles(machine->stored_values);
 
     struct kademMessage answer_message;
     json_object *header, *argument;
