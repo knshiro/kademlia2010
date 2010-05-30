@@ -1917,7 +1917,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
 
         // Search the nearest nodes and store it in store_find_queries machine's field
 	nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
-	kdm_debug("test\n");
+	kdm_debug("nearest_nodes: %s\n",nearest_nodes);
         if(nearest_nodes != NULL){
             store_file_temp = create_store_file(temp, nearest_nodes, sizeof(struct store_file));
 	    kdm_debug("****************size : %d\n", sizeof(struct store_file));
@@ -1936,7 +1936,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
     else
     {
         value = result->value;
-
+	printf("testsss\n");
         //create the payload: "ip_address/port":
         leng = strlen(value);
         sprintf(leng_payload,"%d",leng); 
@@ -1967,8 +1967,9 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
         json_object_put(argument);
 
         kdm_debug("<<<< RPCHandleFindValue\n");
-        return 0;
+        
     }
+    return 0;
 }
 
 
