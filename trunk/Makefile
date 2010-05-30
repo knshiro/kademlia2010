@@ -17,6 +17,9 @@ all:   kademlia test_md5 test_store_file test_local_rpc messaging test_kademlia 
 test_kademlia :   test_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 	${CC} -o $@ $^ ${LIBS}
 
+test_ugo :   test_kademlia_ugo.o kademlia.o md5.o store_file.o node.o XORmetrics.o
+	${CC} -o $@ $^ ${LIBS}
+
 kademlia:    main_kademlia.o kademlia.o md5.o store_file.o node.o XORmetrics.o
 	${CC} -o $@ $^ ${LIBS}
 
