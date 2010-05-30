@@ -11,6 +11,7 @@
 
 //Create a store_file struct
 store_file* create_store_file( char* _key, char* _value, int _value_len){
+	kdm_debug("_value_len: %i\n",_value_len);
     time_t _timestamp;
     store_file* file =malloc(sizeof(store_file));
 
@@ -20,6 +21,7 @@ store_file* create_store_file( char* _key, char* _value, int _value_len){
     if(_value_len!=0){
         file->value = malloc(_value_len*sizeof(char));
         memcpy(file->value, _value, _value_len);
+	file->value_len = _value_len;
     }
     else {
         file->value = NULL;

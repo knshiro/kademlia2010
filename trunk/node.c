@@ -309,8 +309,7 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
                                 temp = create_node_details(temp, look_into->ip, look_into->port, look_into->nodeID);    
                                 result = insert_to_tail(result,temp);
                                 look_into = look_into->next;
-                                num_nodes_found++;
-                                printf("test\n");
+                                num_nodes_found++;  
                                 
                         }
                         if(look_into == NULL){
