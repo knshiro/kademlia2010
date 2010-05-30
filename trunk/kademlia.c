@@ -57,14 +57,13 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     int i, peer_port;
     char *pointer;
     char hostname[100]; 
-    char buffer[30];
-    char port_str[10];
+    char buffer[20];
+    char port_str[6];
     int hostname_len = sizeof(hostname);
     struct hostent *server;
     unsigned int buf_len;
     char signature[HASH_SIGNATURE_LENGTH];
     char id[HASH_STRING_LENGTH+1]; 
-
 
 
     // Init latest_query_rpc
@@ -232,50 +231,66 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     kdm_debug("	   <<<<< Refresh k_buckets\n");
     
     kdm_debug("	   >>>>> Insert the node from the message\n");
-    //Try to insert the node from which the DHT receives a message
-    //Look at the message. 
-    // Extract value from KademMessage
-    char* hash_value;	
-    hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
-    //look for this value into the contact_table.
-    int bucket_val, j;
-    node_details* bucket2;
-    node_details* Kbucket;
+    //Try to insert the node from which the DHT receives a message except if the message is a ping.
+    //Look at the query. 
+	//transactionID a u lieu de query
+	char * transactionID;
+	char* query;
+	transactionID = json_object_get_string(json_object_object_get(message,"t"));
+	store_file* file;
+	file = find_key(machine->sent_queries, transactionID);
+	if (file!=NULL){
+		json_object *new_obj;
+    		new_obj = json_tokener_parse(file->value);
+		query = json_object_get_string(json_object_object_get(message,"q"));		
+		kdm_debug("query: %s\n", query);
+	}	
+	if(query == KADEM_PING){
+		//Do nothing
+	}else{
+   		// Extract value from KademMessage
+    		char* hash_value;	
+    		hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
+    		//look for this value into the contact_table.
+    		int bucket_val, j;
+    		node_details* bucket2;
+    		node_details* Kbucket;
 
-    bucket_val = find_node_details(machine->id, hash_value)	;
-    Kbucket = machine->routes.table[bucket_val];
-    bucket2 = look_for_IP(Kbucket, hash_value);
+    		bucket_val = find_node_details(machine->id, hash_value)	;
+    		Kbucket = machine->routes.table[bucket_val];
+    		bucket2 = look_for_IP(Kbucket, hash_value);
 
-    char ip_to_ping[16];
-    int port_to_ping;
-    char nodeID_to_ping[17];
-    char delim[] = "/";
-    char* waiting_node;
-    store_file * waiting;
+    		char ip_to_ping[16];
+    		int port_to_ping;
+    		char nodeID_to_ping[17];
+    		char delim[] = "/";
+    		char* waiting_node;
+    		store_file * waiting;
 
-    if(bucket2 != NULL){
-        //refresh the timestamp
-        bucket2->timestamp = time (NULL);
-    }else{
-        //try to insert into the bucket.
-        j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
-        if(j<0){
-            strcpy(ip_to_ping,Kbucket->ip);
-            port_to_ping = Kbucket->port;
-            strcpy(nodeID_to_ping, Kbucket->nodeID);
-
-            //store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
-            waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
-            strcpy(waiting_node,addr);
-            strcat(waiting_node,delim);
-            strcat(waiting_node,port);
-            strcat(waiting_node,delim);
-            strcat(waiting_node,hash_value);
-            waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
-            insert_to_tail_file(machine->waiting_nodes, waiting);
-            kademPing(machine, ip_to_ping, port_to_ping);
-        }
-    }
+    		if(bucket2 != NULL){
+        		//refresh the timestamp
+       		 	bucket2->timestamp = time (NULL);
+    		}else{
+        		//try to insert into the bucket.
+        		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
+        		if(j<0){
+            			strcpy(ip_to_ping,Kbucket->ip);
+            			port_to_ping = Kbucket->port;
+            			strcpy(nodeID_to_ping, Kbucket->nodeID);
+				
+            			//store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
+            			waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
+            			strcpy(waiting_node,addr);
+            			strcat(waiting_node,delim);
+            			strcat(waiting_node,port);
+            			strcat(waiting_node,delim);
+            			strcat(waiting_node,hash_value);
+            			waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
+            			insert_to_tail_file(machine->waiting_nodes, waiting);
+            			kademPing(machine, ip_to_ping, port_to_ping);
+        		}
+		}
+    	}
 
     kdm_debug("	   <<<<< Insert the node from the message\n");
     kdm_debug("	   >>>>> Maintenance: waiting_nodes\n");
@@ -670,7 +685,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     json_object *header, *response, *node_array, *query;
     const char * transactionId, *key;
     node_details* nodes = NULL, *current_node;
-    char node_string[HASH_STRING_LENGTH+15+6+3+1];
+    char node_string[15+6+3+1];
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
@@ -689,12 +704,14 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     kdm_debug("Looking for nearest nodes\n");
     nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
     current_node = nodes;
+    kdm_debug("Found nearest nodes\n");
     while(current_node != NULL){
-        concatenate(current_node,node_string);
+        concatenate(current_node,node_string);        
         json_object_array_add(node_array,json_object_new_string(node_string));
         current_node = current_node->next;
     }
     json_object_object_add(response,"nodes",json_object_get(node_array));
+    kdm_debug("Added to json\n");
 
     json_object_object_add(header, KADEM_ANSWER,json_object_get(response));
 
@@ -1160,7 +1177,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
 }
 
 
-
+//No segmentation fault
 int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port){
 
     kdm_debug(">>>> kademStoreValue\n");
@@ -1176,7 +1193,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
-    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_VALUE));
+    json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_STORE));
 
     argument = json_object_new_object();
     json_object_object_add(argument,"id",json_object_new_string(machine->id));
@@ -1193,20 +1210,16 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     ret = kademSendMessage(machine->sock_p2p, &message, dst_addr, dst_port);
 
 
-    // Store Query in sent_queries
-    head = json_object_to_json_string(message.header);
-    query = create_store_file( transactionId, head, strlen(head));
-    insert_to_tail_file(machine->sent_queries, query);
-
     json_object_put(header);
     json_object_put(argument);
     kdm_debug("<<<< kademStoreValue\n");
     return ret;
 }
 
+//NO segmentation fault
 int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * message,char * addr, int port){
 
-    kdm_debug("<<<< kademStoreValue\n");
+    kdm_debug("<<<< kademHandleStoreValue\n");
     struct kademMessage answer_message;
     int ret,found = 0,i=0;
     json_object *header, *response, *query_argument;
@@ -1218,18 +1231,11 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
 
     token = json_object_get_string(json_object_object_get(query_argument,"token"));
 
-    // Verify if token exists
-    while(!found && i<KADEM_MAX_NB_TOKEN){
-        if(strcmp(machine->tokens[i],token) == 0){
-            found = 1;
-            strcpy(machine->tokens[i],"");
-        }
-        else{
-            i++;
-        }
-    }
-
-    if(found){
+    // Verify if token exists into token_rec.
+    store_file* file;
+    file = find_key(machine->token_rec, token);
+	kdm_debug("file :%s\n",file);
+    if(file!=NULL){
         //fix payload + create_store_file
         key = json_object_get_string(json_object_object_get(query_argument,"value"));
         value = message->payload;
@@ -1257,7 +1263,7 @@ int kademHandleStoreValue(struct kademMachine * machine, struct kademMessage * m
         //fix ret value
         ret = kademSendError(machine, transactionId,KADEM_ERROR_STORE,KADEM_ERROR_STORE_VALUE,addr,port); 
     }
-    kdm_debug("<<<< kademStoreValue\n");
+    kdm_debug(">>>> kademHandleStoreValue\n");
     return ret;
 
 }
@@ -1268,33 +1274,43 @@ int kademHandleAnswerStoreValue(struct kademMachine * machine, struct kademMessa
     return 0;
 }
 
-
+//NO segmentation Fault.
 int kademSendStoreValue(struct kademMachine * machine, node_details* node_to_send, char* value, char* token){
 
-    kdm_debug(">>>> kademStoreValue\n");
+    kdm_debug(">>>> kademSendStoreValue\n");
     int i=0;
+    
     //look for the token into token_sent.
     store_file* one_token_sent;
     one_token_sent = find_key(machine->token_sent, token);
-
+    kdm_debug("one_token_sent: %s\n",one_token_sent->key);
+    
     //look how many nodes we send the value to.
     int number_sent;
     number_sent = count_nodes_details(node_to_send); 
-
+    kdm_debug(" number_sent: %i\n", number_sent);
     node_details* temp=NULL;
+    temp = node_to_send;
+    kdm_debug("data to store: %s\n", machine->token_sent->key); 
 
-    for(i;i<number_sent;i++){
+    //print_nodes(temp,-1);
+    kdm_debug("token: %s\n",token);
+    kdm_debug("value: %s\n",value);
+    kdm_debug("one_token_sent->value: %s, leng: %i\n",one_token_sent->value, strlen(one_token_sent->value));
+   
+    while(temp!=NULL){
+	//kdm_debug("ip: %s\n",temp->ip);
+    	//kdm_debug("port: %i\n",temp->port);
+	kdm_debug("i: %i\n", i);
+   	i++;
         kademStoreValue(machine, token, value, one_token_sent->value, strlen(one_token_sent->value), temp->ip, temp->port);
         temp = temp->next;
-        if(temp = NULL){
-            break;
-        }
     }
 
     //delete the one_token_sent in the token_store list.
-    delete_key(machine->token_sent, token);
+    machine->token_sent = delete_key(machine->token_sent, token);
 
-    kdm_debug("<<<< kademStoreValue\n");
+    kdm_debug("<<<< kademSendStoreValue\n");
     return 0;
 }
 
@@ -1572,7 +1588,7 @@ int startKademlia(struct kademMachine * machine){
   RPC communication
   ============================================*/
 
-
+//Segmentation Fault from kademFindValue. 
 int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
     kdm_debug(">>>> RPCHandleStoreValue\n");
@@ -1592,8 +1608,9 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     //TEMP: value to store
     temp = json_object_get_string(json_object_object_get(argument2,"value"));
     new_value = create_store_file(temp, data, length);
+    kdm_debug("<<<< insert_to_tail_file\n");
     insert_to_tail_file(machine->stored_values, new_value); //Value stored.
-
+    kdm_debug(">>>> insert_to_tail_file\n");
     //Answer to the RPC
     header = json_object_new_object(); 
 
@@ -1608,6 +1625,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 
     if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+	printf("Counldn't send message\n");
         return -1;
     }   //Answered to the RPC.
 
@@ -1623,25 +1641,45 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     machine->latest_query_rpc.port = port;
 
     //find the nearest nodes.
-    node_details* nearest_nodes;
+    node_details* nearest_nodes = NULL;
     store_file* store_file_temp;
     //store the query GET into "store_find_queries".
+    kdm_debug("<<<< k_nearest_nodes\n");
     nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
-    store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+    kdm_debug(">>>> k_nearest_nodes\n");
+	if(nearest_nodes==NULL){
+		store_file_temp = create_store_file(temp, NULL, 0);
+	}else{
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(node_details));
+	}
+   
+    kdm_debug("key store_file_temp: %s\n",store_file_temp->key);
+    kdm_debug("<<<< insert_to_tail_file\n");
+    
+    kdm_debug("machine->store_find_queries: %s\n",machine->store_find_queries);
     insert_to_tail_file(machine->store_find_queries, store_file_temp);
-
+    kdm_debug(">>>> insert_to_tail_file\n");
     //Create a token for this query.
     char token[HASH_SIGNATURE_LENGTH+1];    
     generateTransactionId(token, machine->id);
+   kdm_debug("token: %s\n",token);
     store_file* store_token;
-    store_token = create_store_file(store_token, message->payload, 0);
+    kdm_debug("message->payload: %s\n",message->payload);
+    //store the token in the key and the value waiting in the value field.
+    store_token = create_store_file(token, message->payload, 0);
     insert_to_tail_file(machine->token_sent, store_token);
 
     // Send find values request to nearest nodes and increment count
     store_token->count = 0;
+    //SEGMENTATION FAULT
+    kdm_debug("token: %s\n",token);
+    /*kdm_debug("nearest_nodes: %s\n",nearest_nodes);
+    kdm_debug("nearest_nodes->ip: %s\n",nearest_nodes->ip);
+    kdm_debug("nearest_nodes->port: %i\n",nearest_nodes->port);*/
     while (nearest_nodes != NULL){
         kademFindValue(machine, temp, token, nearest_nodes->ip, nearest_nodes->port);
         store_file_temp->count++;
+       	nearest_nodes = nearest_nodes->next;
     }
     json_object_put(header);
     json_object_put(argument);
@@ -1656,7 +1694,7 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
     // Extract value from KademMessage
     char* hash_value;	
     hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
-
+    kdm_debug("hash_value: %s\n",hash_value);
     // Use hash value and MachineID to find the right node_details using find_node_details and look_for_id functions
     int bucket_val;
     node_details* bucket;
@@ -1664,22 +1702,53 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
     char* _ip;
     int _port;
 
-    bucket_val = find_node_details(machine->id, hash_value)	;
+    bucket_val = find_node_details(machine->id, hash_value);
     Kbucket = machine->routes.table[bucket_val];
-    //print_nodes(machine->routes.table[127], 127); //Test
-    kdm_debug("kbucket number: %i, hash_value: %s\n", bucket_val, hash_value);
     bucket = look_for_IP(Kbucket, hash_value);		
+    if(bucket!=NULL){
+    	// Extract IP/Port from node_details
+    	_ip = bucket->ip;
+    	_port = bucket->port;
 
-    // Extract IP/Port from node_details
-    if (bucket != NULL)
-    {
-    _ip = bucket->ip;
-    _port = bucket->port;
-    kdm_debug("ip: %s, port: %i\n", _ip, _port);
-    // Send Kadem_ping to the right node
-    kademPing(machine, _ip, _port);	
+    	// Send Kadem_ping to the right node
+    	kademPing(machine, _ip, _port);	
     }
-    else {kdm_debug("pas de bucket trouvée: pas de ping\n");}
+    else{
+	//Send a Find Node
+	//find node dans Store find queries.  (hash: key / value: k_nearest_nodes en *)
+	//RPC message last: changer.
+
+	//k_nearest_nodes
+	node_details* nearest_nodes=NULL;
+	nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, hash_value);
+	kdm_debug("nearest_nodes: %s\n",nearest_nodes);
+	
+	//store into store_find_queries
+	store_file* file;
+	if(nearest_nodes==NULL){
+		file = create_store_file(hash_value, NULL, 0);
+	}else{
+		file = create_store_file(hash_value, nearest_nodes, sizeof(node_details));
+		machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, file);
+	}
+	//Store into latest_query_rpc
+	strcpy(machine->latest_query_rpc.query,KADEM_PING);
+	strcpy(machine->latest_query_rpc.value,hash_value);
+	strcpy(machine->latest_query_rpc.ip,addr);
+	machine->latest_query_rpc.port = port;
+
+	//Send the find Node
+	file->count = 0;
+	while (nearest_nodes != NULL){
+	    kdm_debug("<<<< kademFindNode\n");
+	    kdm_debug("nearest_nodes->ip: %s\n",nearest_nodes->ip);
+            kademFindNode(machine, hash_value, nearest_nodes->ip, nearest_nodes->port);
+            file->count++;
+            nearest_nodes = nearest_nodes -> next;
+        }
+	
+    }
+
     kdm_debug("<<<< RPCHandlePing\n");
     return 0;
 }
@@ -1900,15 +1969,14 @@ int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * messa
 
 int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
-
     kdm_debug(">>>> RPCHandleFindNode\n");
     //look for nodeID into the header of message
     int bucket_no;
-    const char *temp ;
+    const char *temp, *ip_port;
     char ok[] = "OK";
     json_object *argument2, *header, *argument;
     struct kademMessage answer_message;
-    char ip_port[20];
+    
     argument2 = json_object_object_get(message->header,"a");
     temp = json_object_get_string(json_object_object_get(argument2,"value"));
 
@@ -1919,7 +1987,7 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
 
     if (find != NULL){
         kdm_debug("Find node: %s/%s/%d\n",find->nodeID,find->ip,find->port);
-        concatenate2(find, ip_port);
+        ip_port = concatenate2(find, ip_port);
 
         header = json_object_new_object(); 
 
@@ -1932,12 +2000,12 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
 
         answer_message.header = header;
         answer_message.payloadLength = 0;
-        kdm_debug("Message created\n");
 
         if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
             kdm_debug("<<<< RPCHandleFindNode\n");
             return -1;
         }
+        free(ip_port);
         kdm_debug("<<<< RPCHandleFindNode\n");
         return 0;
     }
@@ -1948,7 +2016,7 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
         // Store the query in the machine last_query field
         json_object *argument3;
         const char *query_value, *query_type;
-        node_details* nearest_nodes = NULL;
+        node_details* nearest_nodes;
         store_file* store_file_temp;
         
         query_type = json_object_get_string(json_object_object_get(message->header,KADEM_QUERY));
@@ -1963,28 +2031,30 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
         kdm_debug("Stored rpc query : type %s, value %s, addr %s, port %d\n", query_type, query_value, addr, port);
 
         // Search the nearest nodes and store it in store_find_queries machine's field
-
+	kdm_debug("Nearest node ->\n");
         nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, query_value);
+        kdm_debug("Nearest passed\n");
         if(nearest_nodes != NULL){
             kdm_debug("Find node: %s/%s/%d\n",nearest_nodes->nodeID,nearest_nodes->ip,nearest_nodes->port);
             store_file_temp = create_store_file(temp, nearest_nodes, sizeof(node_details));
-
-            machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, store_file_temp);
-
-            kdm_debug("Stored find query\n");
-
-            // Send find values request to nearest nodes and increment count
-            store_file_temp->count = 0;
-            while (nearest_nodes != NULL)
-            {
-                kademFindNode(machine, temp, nearest_nodes->ip, nearest_nodes->port);
-                store_file_temp->count++;
-                nearest_nodes = nearest_nodes -> next;
-            }
         } else {
             kdm_debug("No nodes\n");
+            store_file_temp = create_store_file(temp, NULL, 0);
         }
-              kdm_debug("<<<< RPCHandleFindNode\n");
+        kdm_debug("Stored find query\n");
+        insert_to_tail_file(machine->store_find_queries, store_file_temp);
+
+        kdm_debug("Stored find query\n");
+        
+        // Send find values request to nearest nodes and increment count
+        store_file_temp->count = 0;
+        while (nearest_nodes != NULL)
+        {
+            kademFindNode(machine, temp, nearest_nodes->ip, nearest_nodes->port);
+            store_file_temp->count++;
+            nearest_nodes = nearest_nodes -> next;
+        }
+        kdm_debug("<<<< RPCHandleFindNode\n");
         return -2;
 
     }
