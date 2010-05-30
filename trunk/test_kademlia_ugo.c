@@ -86,28 +86,36 @@ int main(int argc, char *argv[]){
     kademFindNode(&machine,"test_node",addr,port);
     kdm_debug("<<<<TEST Find Node\n\n\n");
     
-    kdm_debug(">>>>TEST RPC Handle Find Node\n\n");
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     kdm_debug(">>>>FIRST ROUND node found\n");
     RPCHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND node found\n\n");
     
-    kdm_debug(">>>>SECOND ROUND node found\n");
+    kdm_debug(">>>>SECOND ROUND node not found\n");
 
     json_object_object_add(argument,"value",json_object_new_string(test2));
     json_object_object_add(header,"a",json_object_get(argument));
     message.header = header;
 
     RPCHandleFindNode(&machine,&message,addr,port);
-    kdm_debug("<<<<SECOUND ROUND node found\n\n");
+    kdm_debug("<<<<SECOUND ROUND node not found\n\n");
     
-    kdm_debug("<<<<TEST RPC Handle Find Node\n\n\n");
-   /* 
-    kdm_debug(">>>>TEST Handle Find Node\n");
-    print_routing_table(machine.routes);
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
+   
+    
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST KADEM Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
+    
+    kdm_debug(">>>>FIRST ROUND\n");
     kademHandleFindNode(&machine,&message,addr,port);
-    kdm_debug("<<<<TEST Handle Find Node\n\n");
+    kdm_debug("<<<<FIRST ROUND\n\n");
   
-    kdm_debug(">>>>TEST Handle Find Node\n");
+
+    
+    
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
+    
+    /* 
+        kdm_debug(">>>>TEST Handle Find Node\n");
     print_routing_table(machine.routes);
     kademHandleAnswerFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Handle Find Node\n\n");
