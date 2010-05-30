@@ -334,7 +334,9 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     
     while (refreshed_queries != NULL)
     {
+
         kdm_debug("loop while\nnow: %i, timestamp: %i\n", _timestamp, refreshed_queries->timestamp);
+
         if(_timestamp - refreshed_queries->timestamp > KADEM_TIMEOUT_REFRESH_QUERY){
             machine->sent_queries = delete_key(machine->sent_queries, refreshed_queries->key);
         }
@@ -352,16 +354,24 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     //Delete the out of date node that have count=1 into store_find_queries
     kdm_debug("	   <<<< Maintenance: store_find_queries\n");
     store_file * temp2;
+    node_details *list;
     temp2 = machine->store_find_queries;
     while(temp2 != NULL){
-        if(temp2->count == 1){
-            if(_timestamp - temp2->timestamp > 2*KADEM_TIMEOUT_PING){
-                delete_key(machine->store_find_queries, temp->key);
+        list = temp2->value;
+        kdm_debug("ok1\n");
+        while(list != NULL)
+        {
+        //print_nodes(list, 0);
+        kdm_debug("ok2\ncount: %i, timestamp: %i\n", list->count, list->timestamp);
+            if((list->count == 1) && (_timestamp - list->timestamp > 2*KADEM_TIMEOUT_PING))
+            {kdm_debug("NodeID: %s\n", list->nodeID);
+                temp2 = delete_node(temp2, list->nodeID);
             }
+            list = list->next;
         }
         temp2 = temp2->next;
     }
-    kdm_debug("	   >>>> Maintenance: store_find_queries\n");
+    kdm_debug("	   >>>>> Maintenance: store_find_queries\n");
 
     kdm_debug(">>>> kademMaintenance\n");
 
@@ -847,7 +857,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
                     }
 
                     if (strcpy(machine->latest_query_rpc.query, "find_node") == 0 ){
-                        // Answer to the get from the RP
+                        // Answer to the get from the RPC
                         // Write the header 
                         rpc_msg_header = json_object_new_object();
                         json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));

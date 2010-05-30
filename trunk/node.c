@@ -432,9 +432,10 @@ node_details* delete_node(node_details* node, char *nodeID){
     node_details* temp2;
     temp = node;
 
-    if(node->next == NULL)
+    if(strcmp(node->nodeID, nodeID)==0)
     {
-        fflush(stdout);
+        node = node->next;
+        free_node(temp);
     }
     else {
         while(temp->next != NULL)

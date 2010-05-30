@@ -382,6 +382,103 @@ int main(int argc, char *argv[]){
         kdm_debug("##############  waiting nodes: ##############\n");
         printFiles(machine.sent_queries);
         
+        // Creation of store_find_queries
+        node_details *query1, *query2, *node, *tampon2;
+        node = create_node_from_string("127.0.0.1/3100/00000000000000000000000000000001");
+        query1 = insert_to_tail(query1, node);
+        tampon2 = query1;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-5;
+        node = create_node_from_string("127.0.0.2/3200/00000000000000000000000000000002");
+        query1 = insert_to_tail(query1, node);
+        tampon2 = query1;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-4;
+        node = create_node_from_string("127.0.0.3/3300/00000000000000000000000000000003");
+        query1 = insert_to_tail(query1, node);
+        tampon2 = query1;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 0;
+        tampon2->timestamp = _timestamp-5;
+        node = create_node_from_string("127.0.0.4/3400/00000000000000000000000000000004");
+        query1 = insert_to_tail(query1, node);
+        tampon2 = query1;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-1;
+        
+        //Query2
+        node = create_node_from_string("127.1.0.1/3100/00000000000000000000000000000001");
+        query2 = insert_to_tail(query2, node);
+        tampon2 = query2;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-5;
+        node = create_node_from_string("127.1.0.2/3200/00000000000000000000000000000002");
+        query2 = insert_to_tail(query2, node);
+        tampon2 = query2;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-4;
+        node = create_node_from_string("127.1.0.3/3300/00000000000000000000000000000003");
+        query2 = insert_to_tail(query2, node);
+        tampon2 = query2;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 0;
+        tampon2->timestamp = _timestamp-5;
+        node = create_node_from_string("127.1.0.4/3400/00000000000000000000000000000004");
+        query2 = insert_to_tail(query2, node);
+        tampon2 = query2;
+        while (tampon2->next != NULL)
+        {
+            tampon2 = tampon2->next;
+        }
+        tampon2->count = 1;
+        tampon2->timestamp = _timestamp-1;
+        
+        
+        store_file * find_queries;
+        find_queries = create_store_file("100", query1, sizeof(node_details) );
+        machine.store_find_queries = find_queries;
+        find_queries = create_store_file("200", query2, sizeof(node_details) );
+        insert_to_tail_file(machine.store_find_queries, find_queries);
+         
+         tampon2 = query1;
+        while (tampon2 != NULL)
+        {
+        printf("count:%i\n", tampon2->count);
+        tampon2 = tampon2->next;
+        }
+         
+         print_nodes(query1, 0);
+         print_nodes(query2, 0);
+         printFiles(machine.store_find_queries);
+         
+        
+        // Lance maintenance
         kademMaintenance(&machine, NULL, addr, port);
         
         print_values(machine.sent_queries);
