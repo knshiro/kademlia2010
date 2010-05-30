@@ -102,7 +102,7 @@ void print_nodes(node_details * bucket, int kbucket_no){
     temp = bucket;
     printf("nodeID in the k_bucket %i:\n",kbucket_no);
     while(temp != NULL){
-        printf("nodeID: %s, IP_address: %s, port: %i\n", temp->nodeID,temp->ip,temp->port);
+        kdm_debug("nodeID: %s, IP_address: %s, port: %i, timestamp: %i, count: %i\n", temp->nodeID,temp->ip,temp->port, temp->timestamp, temp->count);
         temp = temp->next;
     }
     printf("\n");
@@ -440,9 +440,10 @@ node_details* delete_node(node_details* node, char *nodeID){
     node_details* temp2;
     temp = node;
 
-    if(node->next == NULL)
+    if(strcmp(node->nodeID, nodeID)==0)
     {
-        fflush(stdout);
+        node = node->next;
+        free_node(temp);
     }
     else {
         while(temp->next != NULL)
