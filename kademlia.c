@@ -72,6 +72,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     strcpy(machine->latest_query_rpc.ip, "");
     machine->latest_query_rpc.port = 0;
 
+
     machine->stored_values = NULL;
     machine->sent_queries = NULL;
     machine->waiting_nodes = NULL;
@@ -82,8 +83,6 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         machine->routes.table[i] = NULL;
     }
-
-    srand (time (NULL));
 
     //####################################
     // Create first socket for local RPC #
@@ -198,8 +197,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
 
 int kademMaintenance(struct kademMachine * machine, struct kademMessage* message, char* addr, int port){
 
-    kdm_debug(">>>>>> kademMaintenance\n");
-    kdm_debug("	   >>>>>> Refresh k_buckets\n");
+    kdm_debug("<<<< kademMaintenance\n");
+    kdm_debug("	   <<<< Refresh k_buckets\n");
     //Refresh the k-buckets of the routing_Table
     time_t _timestamp;
     int i;
@@ -210,12 +209,10 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         bucket = machine->routes.table[i];
         //print_nodes(machine->routes.table[i], i); //Test
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
-        {   
-            kdm_debug("refresh1\n");
+        {
             if (bucket->count == 2)
             {
-                kdm_debug("refresh2, nodeID: %s\n", bucket->nodeID);
-                machine->routes.table[i] = delete_node(machine->routes.table[i], bucket->nodeID);
+                delete_node(machine->routes.table[i], bucket->nodeID);
             } 
             else 
             {
@@ -226,10 +223,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
             bucket = bucket->next;
         }
     }
-    print_nodes(machine->routes.table[127],127); // Test
-    kdm_debug("	   <<<<< Refresh k_buckets\n");
-    
-    kdm_debug("	   >>>>> Insert the node from the message\n");
+    kdm_debug("	   >>>> Refresh k_buckets\n");
+    kdm_debug("	   <<<< Insert the node from the message\n");
     //Try to insert the node from which the DHT receives a message except if the message is a ping.
     //Look at the query. 
 	//transactionID a u lieu de query
@@ -291,8 +286,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
 		}
     	}
 
-    kdm_debug("	   <<<<< Insert the node from the message\n");
-    kdm_debug("	   >>>>> Maintenance: waiting_nodes\n");
+    kdm_debug("	   >>>> Insert the node from the message\n");
+    kdm_debug("	   <<<< Maintenance: waiting_nodes\n");
 
     //Check into the waiting_node list which nodes can be inserted according to their timestamp.
     store_file * temp;
@@ -308,8 +303,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         temp = temp->next;
     }
 
-    kdm_debug("	   <<<<<< Maintenance: waiting_nodes\n");
-    kdm_debug("	   >>>>>> Maintenance: sent_queries\n");
+    kdm_debug("	   >>>> Maintenance: waiting_nodes\n");
+    kdm_debug("	   <<<< Maintenance: sent_queries\n");
     //TOTEST: Refresh the queries
     store_file * refreshed_queries;
     refreshed_queries = machine->sent_queries;
@@ -320,17 +315,17 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         }
         refreshed_queries->next;
     }
-    kdm_debug("	   <<<<< Maintenance: sent_queries\n");
+    kdm_debug("	   >>>> Maintenance: sent_queries\n");
 
     //TOTEST refresh the files stored
-    kdm_debug("	   >>>>> Maintenance: stored_values & token_rec\n");
+    kdm_debug("	   <<<< Maintenance: stored_values & token_rec\n");
     machine->stored_values = clean(machine->stored_values, KADEM_TIMEOUT_REFRESH_DATA);
     machine->stored_values = clean(machine->token_rec,5*KADEM_TIMEOUT_PING);
-    kdm_debug("	  <<<<< Maintenance: stored_values & token_rec\n");
+    kdm_debug("	   >>>> Maintenance: stored_values & token_rec\n");
 
 
     //Delete the out of date node that hav count=1 into store_find_queries
-    kdm_debug("	   >>>>> Maintenance: store_find_queries\n");
+    kdm_debug("	   <<<< Maintenance: store_find_queries\n");
     store_file * temp2;
     temp2 = machine->store_find_queries;
     while(temp2 != NULL){
@@ -341,9 +336,9 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         }
         temp2 = temp2->next;
     }
-    kdm_debug("	   <<<<< Maintenance: store_find_queries\n");
+    kdm_debug("	   >>>> Maintenance: store_find_queries\n");
 
-    kdm_debug("<<<<< kademMaintenance\n");
+    kdm_debug(">>>> kademMaintenance\n");
 
     return 0;
 }
@@ -498,20 +493,20 @@ int kademSendError(struct kademMachine * machine, const char *transactionId, con
 int generateTransactionId(char * transactionId, char * id){
 
     kdm_debug(">>>> generateTransactionId\n");
-    int random_nb;
+    time_t now;
     int len;
-    char string_rand[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
+    char string_time[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
 
     //Retrieve time
-    random_nb = rand();
-    sprintf(string_rand,"%d",random_nb);
-    len = strlen(string_rand); 
-    kdm_debug("Rand : %s (%d chars)\n", string_rand, len);
+    now = time(NULL);
+    sprintf(string_time,"%ld",now);
+    len = strlen(string_time); 
+    kdm_debug("Time : %s (%d chars)\n", string_time, len);
 
     //Hash time
-    md5_buffer(string_rand,len,signature);
+    md5_buffer(string_time,len,signature);
     md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH+1);
-    kdm_debug("Rand hashed: %s\n", buffer);
+    kdm_debug("Time hashed: %s\n", buffer);
     kdm_debug("id: %s\n", id);
     //Hash time + id
     strcpy(buffer2,buffer);
@@ -562,8 +557,8 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     query = create_store_file( transactionId, head, strlen(head)+1);
     machine->sent_queries = insert_to_tail_file(machine->sent_queries, query);
     
-    //json_object_put(argument);
-    //json_object_put(header);
+    json_object_put(header);
+    json_object_put(argument);
     kdm_debug(">>>> kademPing\n");
     return ret;
 }
@@ -599,38 +594,50 @@ int kademPong(struct kademMachine *machine, struct kademMessage *message, char *
     kdm_debug(">>>> kademPong\n");
 }
 
+//NO Segmentation Fault.
 int kademHandlePong(struct kademMachine *machine, struct kademMessage *message, char* ip, int port){
 
     kdm_debug(">>>> Handle pong\n");
 
     const char *transactionId, *id;
-    json_object *header, *response, *rpc_header;
+    json_object *header, *response, *rpc_header, *rpc_argument;
     struct kademMessage rpc_message;
 
     header = message->header;
     transactionId = json_object_get_string(json_object_object_get(header,"t"));
 
     response = json_object_object_get(header,"r");
+	
     id = json_object_get_string(json_object_object_get(response,"id"));
+	
     insert_into_contact_table(&machine->routes,machine->id,id,ip,port); 
     delete_key(machine->sent_queries, transactionId); 
 
-    if(strcmp(machine->latest_query_rpc.query,KADEM_PING)){
+    if(strcmp(machine->latest_query_rpc.query,KADEM_PING)==0){
         if(strcmp(machine->latest_query_rpc.value,id)==0){
             strcpy(machine->latest_query_rpc.query,"");
             rpc_header = json_object_new_object();
-            json_object_object_add(rpc_header,"resp",json_object_new_string("OK"));
+	    rpc_argument = json_object_new_object();
+            json_object_object_add(rpc_argument,"resp",json_object_new_string("OK"));
+	    json_object_object_add(rpc_header,"y",json_object_new_string(KADEM_ANSWER));
+	    json_object_object_add(rpc_header,"r",rpc_argument);
             rpc_message.header = rpc_header;
+	    rpc_message.payloadLength = 0;
+ 	    strcpy(rpc_message.payload,"");
             kademSendMessage(machine->sock_local_rpc, &rpc_message, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
             json_object_put(rpc_header);
         }
     }
 
     //Answer to the ping made by KadMaintenance. Delete the node that was trying to be inserted
-    if(machine->waiting_nodes->key == id){
-        delete_key(machine->waiting_nodes, id);
+    store_file* temp;
+    temp = machine->waiting_nodes;
+    while(temp !=NULL){
+    	if(strcmp(temp->key, id)==0){
+        	machine->waiting_nodes = delete_key(machine->waiting_nodes, id);
+   	}
+   	temp = temp-> next;
     }
-
 
     kdm_debug("<<<< Handle pong\n");
     return 0; 
@@ -742,6 +749,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
 
     transaction_id = json_object_get_string(json_object_object_get(message->header,"t"));
     kdm_debug("Transaction id : %s\n");
+    printFiles(machine->sent_queries);
     sent_query= find_key(machine->sent_queries, transaction_id); //result->value is a kademMessage (result points 
     if(sent_query != NULL){
         kdm_debug("no query\n");
@@ -1686,6 +1694,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     return 0;
 }
 
+//NO Segmentation fault.
 int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
 
@@ -1752,6 +1761,7 @@ int RPCHandlePing(struct kademMachine * machine, struct kademMessage * message, 
     return 0;
 }
 
+//To test with messaging.
 int RPCHandlePingRspn(struct kademMachine * machine, int answ, char *addr, int port){
 
     kdm_debug(">>>> RPCHandlePingRspn\n");
@@ -1789,7 +1799,7 @@ int RPCHandlePingRspn(struct kademMachine * machine, int answ, char *addr, int p
     return 0;
 }
 
-
+//To test with messaging
 int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
     kdm_debug(">>>> RPCHandlePrintRoutingTable\n");
@@ -1820,7 +1830,7 @@ int RPCHandlePrintRoutingTable(struct kademMachine * machine, struct kademMessag
     return 0;
 }
 
-
+//To test with messaging
 int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
     kdm_debug(">>>> RPCHandlePrintObjects\n");

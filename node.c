@@ -13,7 +13,7 @@
 #include "kademlia.h"
 
 
-//To remove
+
 
 // Insert a node_details to the tail of the bucket.
 // Return the pointer to the head of the node_details * (i.e. a struct node_details *).
@@ -102,7 +102,7 @@ void print_nodes(node_details * bucket, int kbucket_no){
     temp = bucket;
     printf("nodeID in the k_bucket %i:\n",kbucket_no);
     while(temp != NULL){
-        kdm_debug("nodeID: %s, IP_address: %s, port: %i, timestamp: %i, count: %i\n", temp->nodeID,temp->ip,temp->port, temp->timestamp, temp->count);
+        printf("nodeID: %s, IP_address: %s, port: %i\n", temp->nodeID,temp->ip,temp->port);
         temp = temp->next;
     }
     printf("\n");
@@ -289,18 +289,12 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
         node_details* find=NULL;
         find = look_for_IP(routes->table[bucket_no], node_to_find);
 
-        
-        kdm_debug("bucket_no %d\n", bucket_no);
         //if the node is found
         if (find != NULL){
-
-            kdm_debug("node is found\n");
-
-            result = find;
-            return find;
+                result = find;
+                return find;
         }
         else{
-            kdm_debug("node is not found\n");
                 node_details* look_into=NULL;
                 look_into = routes->table[bucket_no];
 
@@ -440,10 +434,9 @@ node_details* delete_node(node_details* node, char *nodeID){
     node_details* temp2;
     temp = node;
 
-    if(strcmp(node->nodeID, nodeID)==0)
+    if(node->next == NULL)
     {
-        node = node->next;
-        free_node(temp);
+        fflush(stdout);
     }
     else {
         while(temp->next != NULL)

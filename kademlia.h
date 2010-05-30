@@ -74,7 +74,7 @@ struct message_and_addr {
 	char query[50];
 	char value[50];
 	char ip[16];
-    int port;
+    	int port;
 };
 
 struct kademMachine {
@@ -82,7 +82,7 @@ struct kademMachine {
     int sock_p2p;
     int port;
     char id[HASH_STRING_LENGTH+1];
-    char tokens[KADEM_MAX_NB_TOKEN][HASH_STRING_LENGTH];
+
     routing_table routes;
     store_file * stored_values;
 // New fields for handleGet
