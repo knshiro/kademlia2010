@@ -25,10 +25,11 @@ int main(int argc, char *argv[]){
     char peer_addr[50];
     int i;
     strcpy(peer_addr,"caca/8000");
+    routing_table table;
 
     _kdm_debug = 1;
     initMachine(&machine,6000,7000,"");
- 
+
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         if(machine.routes.table[i] != NULL){
             fprintf(stderr,"Not inited properly\n");
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]){
     argument = json_object_new_object();
     json_object_object_add(argument,"id",json_object_new_string(machine.id));
     json_object_object_add(argument,"value",json_object_new_string(test));
+    json_object_object_add(argument,"target",json_object_new_string(test));
     json_object_object_add(argument,"token",json_object_new_string(hash));
     json_object_object_add(header,"a",json_object_get(argument));
 
@@ -92,7 +94,7 @@ int main(int argc, char *argv[]){
     kdm_debug("\nArriving message\n");
     kdm_debug("%s\n\n", json_object_to_json_string(message.header));
     
-    kademFindNode(&machine,"test_node",addr,port);
+    kademFindNode(&machine,test2,addr,port);
     
     kdm_debug("<<<<FIRST ROUND\n\n");
     
@@ -140,6 +142,7 @@ int main(int argc, char *argv[]){
    
     print_values(machine.sent_queries);
     print_values(machine.store_find_queries);
+    
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
    
     
@@ -162,13 +165,25 @@ int main(int argc, char *argv[]){
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST KADEM Handle Answer Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     
     kdm_debug(">>>>FIRST ROUND\n");
+    json_object * array = json_object_new_array();
+    json_object_array_add(array, json_object_new_string("127.0.0.1/12001/be328b78dbf5117a5c5d77efad4e81a1"));
+    json_object_array_add(array, json_object_new_string("127.0.0.1/12002/be328b78dbf5117a5c5d77efad4e81a2"));
+    json_object_array_add(array, json_object_new_string("127.0.0.1/12003/be328b78dbf5117a5c5d77efad4e81a3"));
+
+    json_object_object_add(argument,"target",json_object_new_string(test2));
+    json_object_object_add(argument,"nodes", array);
+    json_object_object_add(header,"r",json_object_get(argument));
+    json_object_object_add(header,"t",json_object_new_string(machine.sent_queries->key));
+    message.header = header;
+
     kdm_debug("Sent Queries\n");
     print_values(machine.sent_queries);
     kdm_debug("\nFind Queries\n");
     print_values(machine.store_find_queries);
     kdm_debug("\nArriving message\n");
     kdm_debug("%s\n\n", json_object_to_json_string(message.header));
-    
+   
+    kdm_debug("CAST ID : %s\n",((node_details*)machine.store_find_queries->value)->nodeID);
 
     kademHandleAnswerFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND\n\n");

@@ -404,8 +404,7 @@ node_details* create_node_from_string(char* concatenated){
     buffer = strdup (concatenated);
     int count = 1;
 
-    char* nodeID = malloc(16*sizeof(char));
-    char * ip = malloc(15*sizeof(char));
+    char nodeID[40], ip[20];
     int port;
 
     pointer = strtok( buffer, separateur );

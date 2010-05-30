@@ -175,6 +175,14 @@ int generateTransactionId(char * transactionId, char *id);
   ============================================*/
 
 /**
+ *  Operate one round of kademlia lookup algorithm
+ *  @return int  0   Finished
+ *               1   Not finished
+ *               -1  failure
+*/
+int lookUpRound(struct kademMachine * machine, store_file *find_query, json_object * response_content_nodes, const char* node_id, char * ip, int port);
+
+/**
  *  sends a kadmelia ping request to addr, port
  *  @return int  0   success
  *               -1  failure
