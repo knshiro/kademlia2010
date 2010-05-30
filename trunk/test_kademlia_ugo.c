@@ -18,6 +18,7 @@ int main(int argc, char *argv[]){
     struct kademMessage message;
     char udpPacket[400], hash[HASH_STRING_LENGTH+1];
     char test[] = "be328b78dbf5117a5c5d77efad4e81c9";
+    char test2[] = "be328b78dbf5117a5c5d77efad4e81c4";
     char * transactionId = "04";
     char * addr = "127.0.0.1";
     int port = 4000;
@@ -83,13 +84,24 @@ int main(int argc, char *argv[]){
     */
     kdm_debug(">>>>TEST Find Node\n");
     kademFindNode(&machine,"test_node",addr,port);
-    kdm_debug("<<<<TEST Find Node\n\n");
+    kdm_debug("<<<<TEST Find Node\n\n\n");
     
-    kdm_debug(">>>>TEST Handle Find Node\n");
-    print_routing_table(machine.routes);
+    kdm_debug(">>>>TEST RPC Handle Find Node\n\n");
+    kdm_debug(">>>>FIRST ROUND node found\n");
     RPCHandleFindNode(&machine,&message,addr,port);
-    kdm_debug("<<<<TEST Handle Find Node\n\n");
+    kdm_debug("<<<<FIRST ROUND node found\n\n");
     
+    kdm_debug(">>>>SECOND ROUND node found\n");
+
+    json_object_object_add(argument,"value",json_object_new_string(test2));
+    json_object_object_add(header,"a",json_object_get(argument));
+    message.header = header;
+
+    RPCHandleFindNode(&machine,&message,addr,port);
+    kdm_debug("<<<<SECOUND ROUND node found\n\n");
+    
+    kdm_debug("<<<<TEST RPC Handle Find Node\n\n\n");
+   /* 
     kdm_debug(">>>>TEST Handle Find Node\n");
     print_routing_table(machine.routes);
     kademHandleFindNode(&machine,&message,addr,port);
@@ -100,7 +112,7 @@ int main(int argc, char *argv[]){
     kademHandleAnswerFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Handle Find Node\n\n");
   
- 
+ */
 
 
    /* 
