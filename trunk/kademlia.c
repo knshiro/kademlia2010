@@ -652,7 +652,6 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
 
     kdm_debug(">>>> kademFindNode\n");
     return ret;
-
 }
 
 int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char * addr, int port){
