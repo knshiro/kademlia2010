@@ -199,8 +199,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
 
 int kademMaintenance(struct kademMachine * machine, struct kademMessage* message, char* addr, int port){
 
-    kdm_debug("<<<< kademMaintenance\n");
-    kdm_debug("	   <<<< Refresh k_buckets\n");
+    kdm_debug(">>>>>> kademMaintenance\n");
+    kdm_debug("	   >>>>>> Refresh k_buckets\n");
     //Refresh the k-buckets of the routing_Table
     time_t _timestamp;
     int i;
@@ -209,11 +209,15 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     for (i=0; i<NUMBER_OF_BUCKETS; i++)
     {
         bucket = machine->routes.table[i];
+        kdm_debug("now: %i\n", _timestamp);
+        print_nodes(machine->routes.table[i], i);
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
-        {
+        {   
+            kdm_debug("refresh1\n");
             if (bucket->count == 2)
             {
-                delete_node(machine->routes.table[i], bucket->nodeID);
+                kdm_debug("refresh2, nodeID: %s\n", bucket->nodeID);
+                machine->routes.table[i] = delete_node(machine->routes.table[i], bucket->nodeID);
             } 
             else 
             {
@@ -224,8 +228,10 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
             bucket = bucket->next;
         }
     }
-    kdm_debug("	   >>>> Refresh k_buckets\n");
-    kdm_debug("	   <<<< Insert the node from the message\n");
+    print_nodes(machine->routes.table[127],127); // Test
+    kdm_debug("	   <<<<< Refresh k_buckets\n");
+    
+    kdm_debug("	   >>>>> Insert the node from the message\n");
     //Try to insert the node from which the DHT receives a message
     //Look at the message. 
     // Extract value from KademMessage
@@ -271,8 +277,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         }
     }
 
-    kdm_debug("	   >>>> Insert the node from the message\n");
-    kdm_debug("	   <<<< Maintenance: waiting_nodes\n");
+    kdm_debug("	   <<<<< Insert the node from the message\n");
+    kdm_debug("	   >>>>> Maintenance: waiting_nodes\n");
 
     //Check into the waiting_node list which nodes can be inserted according to their timestamp.
     store_file * temp;
@@ -288,8 +294,8 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         temp = temp->next;
     }
 
-    kdm_debug("	   >>>> Maintenance: waiting_nodes\n");
-    kdm_debug("	   <<<< Maintenance: sent_queries\n");
+    kdm_debug("	   <<<<<< Maintenance: waiting_nodes\n");
+    kdm_debug("	   >>>>>> Maintenance: sent_queries\n");
     //TOTEST: Refresh the queries
     store_file * refreshed_queries;
     refreshed_queries = machine->sent_queries;
@@ -300,17 +306,17 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         }
         refreshed_queries->next;
     }
-    kdm_debug("	   >>>> Maintenance: sent_queries\n");
+    kdm_debug("	   <<<<< Maintenance: sent_queries\n");
 
     //TOTEST refresh the files stored
-    kdm_debug("	   <<<< Maintenance: stored_values & token_rec\n");
+    kdm_debug("	   >>>>> Maintenance: stored_values & token_rec\n");
     machine->stored_values = clean(machine->stored_values, KADEM_TIMEOUT_REFRESH_DATA);
     machine->stored_values = clean(machine->token_rec,5*KADEM_TIMEOUT_PING);
-    kdm_debug("	   >>>> Maintenance: stored_values & token_rec\n");
+    kdm_debug("	  <<<<< Maintenance: stored_values & token_rec\n");
 
 
     //Delete the out of date node that hav count=1 into store_find_queries
-    kdm_debug("	   <<<< Maintenance: store_find_queries\n");
+    kdm_debug("	   >>>>> Maintenance: store_find_queries\n");
     store_file * temp2;
     temp2 = machine->store_find_queries;
     while(temp2 != NULL){
@@ -321,9 +327,9 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         }
         temp2 = temp2->next;
     }
-    kdm_debug("	   >>>> Maintenance: store_find_queries\n");
+    kdm_debug("	   <<<<< Maintenance: store_find_queries\n");
 
-    kdm_debug(">>>> kademMaintenance\n");
+    kdm_debug("<<<<< kademMaintenance\n");
 
     return 0;
 }
@@ -542,8 +548,8 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     query = create_store_file( transactionId, head, strlen(head)+1);
     machine->sent_queries = insert_to_tail_file(machine->sent_queries, query);
     
-    json_object_put(argument);
-    json_object_put(header);
+    //json_object_put(argument);
+    //json_object_put(header);
     kdm_debug(">>>> kademPing\n");
     return ret;
 }
