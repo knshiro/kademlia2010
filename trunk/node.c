@@ -282,9 +282,7 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
         int go_back=1;
 	
         //find the k_bucket where the node should be.
-	kdm_debug("<<<< find_node_details\n");
         bucket_no = find_node_details(this_node, node_to_find);
-	kdm_debug(">>>> find_node_details\n");
         //look for the node into the bucket
         node_details* find=NULL;
         find = look_for_IP(routes->table[bucket_no], node_to_find);
