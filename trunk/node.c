@@ -139,7 +139,7 @@ node_details* look_for_IP(node_details * bucket, char* nodeID){
     temp = bucket;
 
     while(temp != NULL){
-        if(temp->nodeID == nodeID){
+        if(strcmp(temp->nodeID,nodeID)==0){
             return temp;
         }
         temp = temp->next;
