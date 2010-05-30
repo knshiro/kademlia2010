@@ -210,6 +210,35 @@ int main(int argc, char *argv[]){
     json_object_array_add(array, json_object_new_string("127.0.0.1/12001/be328b78dbf5117a5c5d77efad4e81a1"));
     json_object_array_add(array, json_object_new_string("127.0.0.1/12002/be328b78dbf5117a5c5d77efad4e81a2"));
     json_object_array_add(array, json_object_new_string("127.0.0.1/12003/be328b78dbf5117a5c5d77efad4e81a3"));
+    
+    header = json_object_new_object();
+    argument = json_object_new_object();
+
+    json_object_object_add(argument,"nodes", array);
+    json_object_object_add(header,"r",json_object_get(argument));
+    json_object_object_add(header,"t",json_object_new_string(machine.sent_queries->key));
+    kdm_debug("Sent Query key %s\n",machine.sent_queries->key);
+    message.header = header;
+    message.payloadLength = 0;
+
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+   
+    kademHandleAnswerFindValue(&machine,&message,addr,port);
+    
+    
+    kdm_debug("Stored values\n");
+    print_values(machine.stored_values);
+
+    kdm_debug("<<<<FIRST ROUND\n\n");
+    
+    kdm_debug(">>>>SECOND ROUND\n");
+    header = json_object_new_object();
+    argument = json_object_new_object();
 
     json_object_object_add(argument,"value",json_object_new_string(value1));
     json_object_object_add(argument,"numbytes",json_object_new_string("17"));
@@ -232,29 +261,8 @@ int main(int argc, char *argv[]){
     
     kdm_debug("Stored values\n");
     print_values(machine.stored_values);
-    kdm_debug("<<<<FIRST ROUND\n\n");
-    
-    kdm_debug(">>>>SECOND ROUND\n");
-    json_object_object_del(argument,"value");
-    json_object_object_del(argument,"numbytes");
-    json_object_object_add(header,"r",json_object_get(argument));
-    json_object_object_add(header,"t",json_object_new_string(machine.sent_queries->key));
-    message.header = header;
-    message.payloadLength = 0;
-
-    kdm_debug("Sent Queries\n");
-    print_values(machine.sent_queries);
-    kdm_debug("\nFind Queries\n");
-    print_values(machine.store_find_queries);
-    kdm_debug("\nArriving message\n");
-    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
    
-    kademHandleAnswerFindValue(&machine,&message,addr,port);
-    
-    
-    kdm_debug("Stored values\n");
-    print_values(machine.stored_values);
-    kdm_debug(">>>>SECOND ROUND\n\n");
+       kdm_debug(">>>>SECOND ROUND\n\n");
 
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Answer Find Value<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
 

@@ -793,7 +793,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
         kdm_debug("try to find the query\n");
         find_query = find_key(machine->store_find_queries, sent_query_value);
 
-        if ((find_query != NULL) && !json_object_is_type(response_content_nodes, json_type_null)){ //sent_query_value is the hash of the searched value
+        if ((find_query != NULL) && response_content_nodes != NULL){ //sent_query_value is the hash of the searched value
 
             kdm_debug("Response content nodes %s\n",json_object_to_json_string(response_content_nodes));
 
@@ -1139,6 +1139,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
     transaction_id = json_object_get_string(json_object_object_get(message->header,"t"));
     sent_query= find_key(machine->sent_queries, transaction_id); //result->value is a kademMessage (result points 
     if(sent_query != NULL){
+        kdm_debug("found query \n");
         //Find the query with the hash (value of sent query)
         sent_query_msg = json_tokener_parse(sent_query->value);
         argument2 = json_object_object_get(sent_query_msg,"a");
@@ -1148,11 +1149,14 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
         if ((find_query = find_key(machine->store_find_queries, sent_query_value) != NULL)){ 
             //sent_query_value is the hash of the searched value
 
+        kdm_debug("found query \n");
             token = json_object_get_string(json_object_object_get(argument2,"token"));
             response_content = json_object_object_get(message->header,"r");
             response_content_value = json_object_object_get(response_content,"value");
             response_content_nodes = json_object_object_get(response_content,"nodes");
-            if (json_object_is_type(response_content_value, json_type_string)) // If value found:
+            
+            kdm_debug("found query \n");
+            if (response_content_value != NULL) // If value found:
             {
                 kdm_debug("Value %s found\n", sent_query_value);
                 // store value
@@ -1181,7 +1185,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             }
 
             // If no value found: new set of nodes received
-            else if (json_object_is_type(response_content_nodes, json_type_array)) 
+            else if (response_content_nodes != NULL) 
             {
                 kdm_debug("Value not found\n");
                 node_id = json_object_get_string(json_object_object_get(response_content,"id"));
