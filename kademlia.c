@@ -702,7 +702,7 @@ int kademFindNode(struct kademMachine * machine, char * target_id, char * addr, 
     kdm_debug(">>>> kademFindNode\n");
     return ret;
 }
-
+//NO Segmentation Fault
 int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char * addr, int port){
 
     kdm_debug(">>>> kademHandleFindNode\n");
@@ -1010,6 +1010,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
 
 }
 
+//NO Segmentation
 int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * message,char *addr, int port){
 
 
@@ -1039,26 +1040,33 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
 
     node_array = json_object_new_array();
     kdm_debug("Looking for value : %s\n",key);
-
+    
+    store_file* find;
+    find = find_key(machine->stored_values,key);
+    char portt[6];
     //look for value
-    if((value = find_key(machine->stored_values,key))!=NULL){
+    if(find!=NULL){
         kdm_debug("Value found !\n");
         json_object_object_add(response,"value",json_object_new_string(key));
-        json_object_object_add(response,"numbytes",json_object_new_int(value->value_len));
-        answer_message.payloadLength = value->value_len;
-        memcpy(answer_message.payload,value->value,answer_message.payloadLength);
+	kdm_debug("find->value_len: %i\n",find->value_len);
+        json_object_object_add(response,"numbytes",json_object_new_int(find->value_len));
+        answer_message.payloadLength = find->value_len;
+        strcpy(answer_message.payload,find->value);
     }
 
     else {
         kdm_debug("Value not found\n");
         nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
         current_node = nodes;
+	
         while(current_node != NULL){
-            strcpy(node_string,nodes->ip);
+            strcpy(node_string,current_node->ip);
             strcat(node_string,"/");
-            sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
+            sprintf(portt,"%d",current_node->port);
+	    strcat(node_string,portt);
             strcat(node_string,"/");
-            strcat(node_string,nodes->nodeID);
+            strcat(node_string,current_node->nodeID);
+	    
             json_object_array_add(node_array,json_object_new_string(node_string));
             current_node = current_node->next;
         }
@@ -1863,7 +1871,7 @@ int RPCHandlePrintObjects(struct kademMachine * machine, struct kademMessage * m
     return 0;
 }
 
-
+//
 int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * message, char * addr, int port)
 {
 
