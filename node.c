@@ -289,12 +289,18 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
         node_details* find=NULL;
         find = look_for_IP(routes->table[bucket_no], node_to_find);
 
+        
+        kdm_debug("bucket_no %d\n", bucket_no);
         //if the node is found
         if (find != NULL){
-                result = find;
-                return find;
+
+            kdm_debug("node is found\n");
+
+            result = find;
+            return find;
         }
         else{
+            kdm_debug("node is not found\n");
                 node_details* look_into=NULL;
                 look_into = routes->table[bucket_no];
 

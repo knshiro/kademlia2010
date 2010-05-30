@@ -27,7 +27,9 @@ int main(void)
 	char* _value4 = "bonjour4";
 
     file1 = NULL;
+	file2 = create_store_file(_key2, _value2, 8);
     print_values(file1);
+	file1 = insert_to_tail_file(file1, file2);
 	file1 = create_store_file( _key, _value, 7);
 	file2 = create_store_file(_key2, _value2, 8);
 	printf("key: %s\n value: %s\n timestamp: %d\n", file1->key, file1->value, file1->timestamp);
