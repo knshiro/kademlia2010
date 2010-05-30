@@ -227,10 +227,17 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     //Try to insert the node from which the DHT receives a message except if the message is a ping.
     //Look at the query. 
 	//transactionID a u lieu de query
-	char * query;
-	query = json_object_get_string(json_object_object_get(message,"t"));
-	
-	kdm_debug("query: %s\n", query);
+	char * transactionID;
+	char* query;
+	transactionID = json_object_get_string(json_object_object_get(message,"t"));
+	store_file* file;
+	file = find_key(machine->sent_queries, transactionID);
+	if (file!=NULL){
+		json_object *new_obj;
+    		new_obj = json_tokener_parse(file->value);
+		query = json_object_get_string(json_object_object_get(message,"q"));		
+		kdm_debug("query: %s\n", query);
+	}	
 	if(query == KADEM_PING){
 		//Do nothing
 	}else{
@@ -260,23 +267,23 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         		//try to insert into the bucket.
         		j = insert_into_contact_table(&(machine->routes), machine->id, hash_value, addr, port);
         		if(j<0){
-            		strcpy(ip_to_ping,Kbucket->ip);
-            		port_to_ping = Kbucket->port;
-            		strcpy(nodeID_to_ping, Kbucket->nodeID);
-
-            		//store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
-            		waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
-            		strcpy(waiting_node,addr);
-            		strcat(waiting_node,delim);
-            		strcat(waiting_node,port);
-            		strcat(waiting_node,delim);
-            		strcat(waiting_node,hash_value);
-            		waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
-            		insert_to_tail_file(machine->waiting_nodes, waiting);
-            		kademPing(machine, ip_to_ping, port_to_ping);
-        	}
-	}
-    }
+            			strcpy(ip_to_ping,Kbucket->ip);
+            			port_to_ping = Kbucket->port;
+            			strcpy(nodeID_to_ping, Kbucket->nodeID);
+				
+            			//store the waiting node into the store_file during the ping.  key=nodeID of the node which is pinged / value = IP/port/nodeID
+            			waiting_node = (char*)malloc((15+6+1+1)*sizeof(char));
+            			strcpy(waiting_node,addr);
+            			strcat(waiting_node,delim);
+            			strcat(waiting_node,port);
+            			strcat(waiting_node,delim);
+            			strcat(waiting_node,hash_value);
+            			waiting = create_store_file(nodeID_to_ping, waiting_node, strlen(waiting_node));
+            			insert_to_tail_file(machine->waiting_nodes, waiting);
+            			kademPing(machine, ip_to_ping, port_to_ping);
+        		}
+		}
+    	}
 
     kdm_debug("	   >>>> Insert the node from the message\n");
     kdm_debug("	   <<<< Maintenance: waiting_nodes\n");
