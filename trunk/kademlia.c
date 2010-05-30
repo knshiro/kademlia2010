@@ -315,7 +315,9 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
         if(_timestamp - temp->timestamp > KADEM_TIMEOUT_PING){
             bucket_number = find_node_details(machine->id, temp->key);
             node_to_insert = create_node_from_string(temp->value);
-            delete_head_insert_tail(machine->routes.table[bucket_number], node_to_insert);
+            kdm_debug("node IP: %s\n", node_to_insert->ip );
+            machine->routes.table[bucket_number] = delete_head_insert_tail(machine->routes.table[bucket_number], node_to_insert);
+            machine->waiting_nodes = delete_key(machine->waiting_nodes, temp->key);
         }
         temp = temp->next;
     }
