@@ -102,7 +102,6 @@ stored_values delete_key(stored_values values, char *key){
 
     if(values->next == NULL)
     {
-        fflush(stdout);
     }
     else {
         while(temp->next != NULL)
