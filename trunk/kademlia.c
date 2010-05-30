@@ -765,6 +765,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
 }
 
 int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage * message, char *ip, int port){
+    
     kdm_debug(">>>>>>kademHandleAnswerFindNode\n");
 
     int i;
@@ -825,17 +826,39 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
             else {
                 kdm_debug("Node not found\n");
                 node_id = json_object_get_string(json_object_object_get(response_content,"id"));
-                if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)== 0)
+                if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)!= 0)
                 {
                     // Research algorithm is finished
-                    kdm_debug("Look up algorithm finished \n");
+                    find_query = find_key(machine->store_find_queries, sent_query_value);
+                    current_nodes = (node_details*)(find_query->value);
+                    loop_node = current_nodes;
+                    result_nodes = NULL; 
+
+                    //split list in two
+                    while(loop_node != NULL && loop_node->next != NULL && loop_node->next->count < 2 )
+                    {
+                        loop_node = loop_node->next;
+                    }
+                    if(loop_node != NULL)
+                    {
+                        if(loop_node->count < 2)
+                        {
+                            result_nodes = loop_node->next;
+                            loop_node->next = NULL;
+                        } else {
+                            result_nodes = loop_node;
+                            current_nodes = NULL;
+                        }
+                    }
+
                     if (strcpy(machine->latest_query_rpc.query, "find_node") == 0 ){
-                        // Answer to the get from the RPC
+                        // Answer to the get from the RP
                         // Write the header 
                         rpc_msg_header = json_object_new_object();
                         json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));
 
                         loop_node = result_nodes;
+
                         rpc_node_array = json_object_new_array();
                         while(loop_node != NULL){
                             json_object_array_add(rpc_node_array, json_object_new_string(concatenate(loop_node ,node_string)));
@@ -869,8 +892,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
     }
     kdm_debug("<<<<<<kademHandleAnswerFindNode\n");
     return 0; 
-}
-
+} 
 
 int lookUpRound(struct kademMachine * machine, store_file *find_query, json_object * response_content_nodes, const char* node_id, char * ip, int port){
 
@@ -878,7 +900,8 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
     
     node_details *loop_node, *current_nodes, *result_nodes;
     json_object *loop_obj;
-    int i;
+    store_file *find_query2;
+    int i, ret;
 
     // compare nodes with answered nodes: Knodes1 = Knodes2 - Knodes1
 
@@ -907,7 +930,7 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
     }
 
     //Move the new node into the result
-    delete_node(current_nodes, node_id);
+    current_nodes = delete_node(current_nodes, node_id);
 
     kdm_debug("Node deleted\n");
     loop_node = NULL;
@@ -955,25 +978,30 @@ int lookUpRound(struct kademMachine * machine, store_file *find_query, json_obje
             loop_node = loop_node->next;
         }
 
-        // Stick current and result list together
-        loop_node = current_nodes;
-        while(loop_node->next !=NULL){
-            loop_node = loop_node->next;
-        }
-        loop_node->next = result_nodes;
-        insert_to_tail_file(machine->store_find_queries, find_query);
-        kdm_debug("<<<<<< Lookup Round\n");
-        return 1;
+        ret = 1;
     }
     else {
         //Algorithm finished
         kdm_debug("Algorithm finished\n");
-        kdm_debug("<<<<<< Lookup Round\n");
-        return 0;
+        ret = 0;
     }
+    
+    // Stick current and result list together
+    loop_node = current_nodes;
+    while(loop_node->next !=NULL){
+        loop_node = loop_node->next;
+    }
+    loop_node->next = result_nodes;
 
+    find_query->value = (char *)current_nodes;
+ 
+    find_query2 = create_store_file(find_query->key, find_query->value, find_query->value_len); 
+    
+    machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, find_query2);
+
+    kdm_debug("<<<<<< Lookup Round\n");
+    return ret;
 }
-
     
 int kademFindValue(struct kademMachine * machine, char * value, char* token, char *addr, int port){
 
@@ -1029,7 +1057,7 @@ int kademHandleFindValue(struct kademMachine * machine, struct kademMessage * me
     const char * transactionId, *key, *token;
     store_file * value; 
     char node_string[HASH_STRING_LENGTH+15+6+3+1];
-    node_details* nodes, *current_node;
+    node_details* nodes=NULL, *current_node=NULL;
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
     query = json_object_object_get(message->header,"a");
@@ -1110,89 +1138,120 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
 
     transaction_id = json_object_get_string(json_object_object_get(message->header,"t"));
     sent_query= find_key(machine->sent_queries, transaction_id); //result->value is a kademMessage (result points 
-    //Find the query with the hash (value of sent query)
-    sent_query_msg = json_tokener_parse(sent_query->value);
-    argument2 = json_object_object_get(sent_query_msg,"a");
-    sent_query_value = json_object_get_string(json_object_object_get(argument2,"value"));
+    if(sent_query != NULL){
+        //Find the query with the hash (value of sent query)
+        sent_query_msg = json_tokener_parse(sent_query->value);
+        argument2 = json_object_object_get(sent_query_msg,"a");
+        sent_query_value = json_object_get_string(json_object_object_get(argument2,"value"));
 
-    //
-    if ((find_query = find_key(machine->store_find_queries, sent_query_value) != NULL)){ //sent_query_value is the hash of the searched value
+        //
+        if ((find_query = find_key(machine->store_find_queries, sent_query_value) != NULL)){ 
+            //sent_query_value is the hash of the searched value
 
-        token = json_object_get_string(json_object_object_get(argument2,"token"));
-        response_content = json_object_object_get(message->header,"r");
-        response_content_value = json_object_object_get(response_content,"value");
-        response_content_nodes = json_object_object_get(response_content,"nodes");
-        if (!json_object_is_type(response_content_value, json_type_null)) // If value found:
-        {
-            kdm_debug("Value %s found\n", sent_query_value);
-            // store value
-            message->payloadLength = atoi(json_object_get_string(json_object_object_get(response_content,"numbytes")));
-            _store_file = create_store_file( sent_query_value, message->payload, message->payloadLength);
-            insert_to_tail_file(machine->stored_values, _store_file);
-
-            //Look if the query is the latest query from the RPC
-            if((strcpy(machine->latest_query_rpc.query, "get") == 0 ) && (strcpy(machine->latest_query_rpc.value, sent_query_value) == 0))
+            token = json_object_get_string(json_object_object_get(argument2,"token"));
+            response_content = json_object_object_get(message->header,"r");
+            response_content_value = json_object_object_get(response_content,"value");
+            response_content_nodes = json_object_object_get(response_content,"nodes");
+            if (!json_object_is_type(response_content_value, json_type_null)) // If value found:
             {
-                // Answer to the get from the RP
-                // Write the header 
-                rpc_msg_header = json_object_new_object();
-                json_object_object_add(rpc_msg_header,"resp",json_object_new_string("OK"));
-                json_object_object_add(rpc_msg_header,"numbytes",json_object_new_int(_store_file->value_len));
-                // Write the message
-                rpc_msg.header = rpc_msg_header;
-                rpc_msg.payloadLength = _store_file->value_len;
-                memcpy(rpc_msg.payload,_store_file,rpc_msg.payloadLength);
-                kademSendMessage(machine->sock_local_rpc, &rpc_msg, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
+                kdm_debug("Value %s found\n", sent_query_value);
+                // store value
+                message->payloadLength = atoi(json_object_get_string(json_object_object_get(response_content,"numbytes")));
+                _store_file = create_store_file( sent_query_value, message->payload, message->payloadLength);
+                insert_to_tail_file(machine->stored_values, _store_file);
 
-                json_object_put(rpc_msg_header);
-            }
-            // Delete the find query
-            delete_key(machine->store_find_queries, sent_query_value);
-        }
-
-        // If no value found: new set of nodes received
-        else if (!json_object_is_type(response_content_nodes, json_type_null)) 
-        {
-            kdm_debug("Value not found\n");
-            node_id = json_object_get_string(json_object_object_get(response_content,"id"));
-            
-            // Research algorithm is finished
-            if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)== 0)
-            {
                 //Look if the query is the latest query from the RPC
-                if(strcpy(machine->latest_query_rpc.query, "get") == 0 )
+                if((strcpy(machine->latest_query_rpc.query, "get") == 0 ) && (strcpy(machine->latest_query_rpc.value, sent_query_value) == 0))
                 {
                     // Answer to the get from the RP
                     // Write the header 
                     rpc_msg_header = json_object_new_object();
-                    json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));
-
+                    json_object_object_add(rpc_msg_header,"resp",json_object_new_string("OK"));
+                    json_object_object_add(rpc_msg_header,"numbytes",json_object_new_int(_store_file->value_len));
                     // Write the message
                     rpc_msg.header = rpc_msg_header;
-                    rpc_msg.payloadLength = 0;
+                    rpc_msg.payloadLength = _store_file->value_len;
+                    memcpy(rpc_msg.payload,_store_file,rpc_msg.payloadLength);
                     kademSendMessage(machine->sock_local_rpc, &rpc_msg, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
+
                     json_object_put(rpc_msg_header);
                 }
-
-                // Look if it was a put query originally
-                if((token_sent = find_key(machine->token_sent,token)) != NULL){
-                    kademSendStoreValue(machine, result_nodes, sent_query_value, token_sent->key);
-                } 
-
                 // Delete the find query
                 delete_key(machine->store_find_queries, sent_query_value);
             }
 
-        }
-        else //TODO Handle error protocole 
-        {
+            // If no value found: new set of nodes received
+            else if (!json_object_is_type(response_content_nodes, json_type_null)) 
+            {
+                kdm_debug("Value not found\n");
+                node_id = json_object_get_string(json_object_object_get(response_content,"id"));
 
+                // Research algorithm is finished
+                if(lookUpRound(machine, find_query, response_content_nodes, node_id, ip, port)== 0)
+                {
+                    // Research algorithm is finished
+                    find_query = find_key(machine->store_find_queries, sent_query_value);
+                    current_nodes = (node_details*)(find_query->value);
+                    loop_node = current_nodes;
+                    result_nodes = NULL; 
+
+                    //split list in two
+                    while(loop_node != NULL && loop_node->next != NULL && loop_node->next->count < 2 )
+                    {
+                        loop_node = loop_node->next;
+                    }
+                    if(loop_node != NULL)
+                    {
+                        if(loop_node->count < 2)
+                        {
+                            result_nodes = loop_node->next;
+                            loop_node->next = NULL;
+                        } else {
+                            result_nodes = loop_node;
+                            current_nodes = NULL;
+                        }
+                    }
+                    //Look if the query is the latest query from the RPC
+                    if(strcpy(machine->latest_query_rpc.query, "get") == 0 )
+                    {
+                        // Answer to the get from the RP
+                        // Write the header 
+                        rpc_msg_header = json_object_new_object();
+                        json_object_object_add(rpc_msg_header,"resp",json_object_new_string("NOK"));
+
+                        // Write the message
+                        rpc_msg.header = rpc_msg_header;
+                        rpc_msg.payloadLength = 0;
+                        kademSendMessage(machine->sock_local_rpc, &rpc_msg, machine->latest_query_rpc.ip, machine->latest_query_rpc.port);
+                        json_object_put(rpc_msg_header);
+                    }
+
+                    // Look if it was a put query originally
+                    if((token_sent = find_key(machine->token_sent,token)) != NULL){
+                        kademSendStoreValue(machine, result_nodes, sent_query_value, token_sent->key);
+                    } 
+
+                    // Delete the find query
+                    delete_key(machine->store_find_queries, sent_query_value);
+                }
+
+            }
+            else //TODO Handle error protocole 
+            {
+
+            }
+            json_object_put(response_content);
+            json_object_put(response_content_value);
+            json_object_put(response_content_nodes);
         }
-        json_object_put(response_content);
-        json_object_put(response_content_value);
-        json_object_put(response_content_nodes);
+        else{
+            kdm_debug("Find Value query not found\n");
+        }
     }
-
+    else
+    {
+        kdm_debug("Query not found\n");
+    }
     delete_key(machine->sent_queries, transaction_id);
 
 
@@ -1201,7 +1260,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
     kdm_debug("<<<< kademHandleAnswerFindValue\n");
     return 0; 
 }
-
+    
 
 //No segmentation fault
 int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port){
@@ -1921,7 +1980,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
         if(nearest_nodes != NULL){
             store_file_temp = create_store_file(temp, nearest_nodes, sizeof(struct store_file));
 	    kdm_debug("****************size : %d\n", sizeof(struct store_file));
-            insert_to_tail_file(machine->store_find_queries, store_file_temp);
+            machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, store_file_temp);
             // Send find values request to nearest nodes and increment count
             store_file_temp->count = 0;
             while (nearest_nodes != NULL)
