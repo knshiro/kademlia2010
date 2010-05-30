@@ -1152,7 +1152,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             response_content = json_object_object_get(message->header,"r");
             response_content_value = json_object_object_get(response_content,"value");
             response_content_nodes = json_object_object_get(response_content,"nodes");
-            if (!json_object_is_type(response_content_value, json_type_null)) // If value found:
+            if (json_object_is_type(response_content_value, json_type_string)) // If value found:
             {
                 kdm_debug("Value %s found\n", sent_query_value);
                 // store value
@@ -1181,7 +1181,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
             }
 
             // If no value found: new set of nodes received
-            else if (!json_object_is_type(response_content_nodes, json_type_null)) 
+            else if (json_object_is_type(response_content_nodes, json_type_array)) 
             {
                 kdm_debug("Value not found\n");
                 node_id = json_object_get_string(json_object_object_get(response_content,"id"));
