@@ -327,11 +327,13 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     //TOTEST: Refresh the queries
     store_file * refreshed_queries;
     refreshed_queries = machine->sent_queries;
+    printFiles(refreshed_queries);
     
     while (refreshed_queries != NULL)
     {
+        kdm_debug("boucle while\nnow: %i, timestamp: %i\n", _timestamp, refreshed_queries->timestamp);
         if(_timestamp - refreshed_queries->timestamp > KADEM_TIMEOUT_REFRESH_QUERY){
-            delete_key(machine->sent_queries, refreshed_queries->key);
+            machine->sent_queries = delete_key(machine->sent_queries, refreshed_queries->key);
         }
         refreshed_queries = refreshed_queries->next;
     }
@@ -344,7 +346,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     kdm_debug("	   >>>> Maintenance: stored_values & token_rec\n");
 
 
-    //Delete the out of date node that hav count=1 into store_find_queries
+    //Delete the out of date node that have count=1 into store_find_queries
     kdm_debug("	   <<<< Maintenance: store_find_queries\n");
     store_file * temp2;
     temp2 = machine->store_find_queries;
