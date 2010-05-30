@@ -84,6 +84,8 @@ int main(int argc, char *argv[]){
     kademPong(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Pong\n\n");
     */
+    
+    
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     
     kdm_debug(">>>>FIRST ROUND\n");
@@ -190,7 +192,7 @@ int main(int argc, char *argv[]){
 
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Answer Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
 
-   /* 
+  /*  
     kdm_debug(">>>>TEST Find value\n");
     kademFindValue(&machine,"value1","token1", addr,port);
     kdm_debug("<<<<TEST Find value\n\n");

@@ -974,7 +974,7 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     const char * head;
 
@@ -1202,7 +1202,7 @@ int kademStoreValue(struct kademMachine * machine, char * token, char * value, c
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     char * head;
 
