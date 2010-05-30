@@ -50,7 +50,7 @@ void delete_store_file(store_file* store_file)
 stored_values insert_to_tail_file(stored_values values, store_file* file)
 {
     //Go through the stored_values to store the last store_file at the end of the list
-    if(file == NULL)
+    if(file != NULL)
     {
         file->timestamp = time(NULL);
         stored_values temp = values;
@@ -144,6 +144,7 @@ stored_values delete_key(stored_values values, char *key){
         while(temp->next != NULL)
         {
             temp2 = temp->next;
+	    kdm_debug("before strcmp\n");
             if(strcmp(temp->next->key, key)==0)
             {
                 temp->next = temp->next->next;
