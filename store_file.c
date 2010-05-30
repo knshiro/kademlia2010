@@ -71,10 +71,12 @@ stored_values insert_to_tail_file(stored_values values, store_file* file)
             values = file;
             return values;
         }
+    }
     else 
     {
         return values;
     }
+    
 }
 /*
 //Go through the stored_values to store the last store_file at the end of the list
