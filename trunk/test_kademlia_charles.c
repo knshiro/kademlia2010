@@ -287,6 +287,7 @@ int main(int argc, char *argv[]){
         }
         bucket->timestamp = _timestamp-298;
         bucket->count = 2;
+        bucket_no = insert_into_contact_table(table, "00000000000000000000000000000000","FFFFFFFF000000000000000000000000", "127.0.1.6", 1276);
 
         print_nodes(table->table[127],127);
         
@@ -304,7 +305,86 @@ int main(int argc, char *argv[]){
         head = json_object_to_json_string(header);
         query = create_store_file( transactionId, head, strlen(head)+1);
         machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);
-        kademMaintenance(&machine, &message, addr, port);
+        
+        // Create waiting_node liste
+        store_file * tampon;
+        query = create_store_file("90000000000000000000000000000000", "127.0.0.1/5000/10000000000000000000000000000001", strlen("127.9.0.0/5000/10000000000000000000000000000001"));
+        print_values(query);
+        machine.waiting_nodes = insert_to_tail_file(machine.waiting_nodes, query);
+        tampon = machine.waiting_nodes;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-3;
+        
+        query = create_store_file("B1000000000000000000000000000000", "node 2", 6);
+        machine.waiting_nodes = insert_to_tail_file(machine.waiting_nodes, query);  
+        tampon = machine.waiting_nodes;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-2;
+        
+        query = create_store_file("30000000000000000000000000000003", "node 3", 6);
+        machine.waiting_nodes = insert_to_tail_file(machine.waiting_nodes, query);  
+        tampon = machine.waiting_nodes;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-2;
+        
+        query = create_store_file("40000000000000000000000000000004", "node 4", 6);
+        machine.waiting_nodes = insert_to_tail_file(machine.waiting_nodes, query);  
+        tampon = machine.waiting_nodes;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-1;
+        query = create_store_file("50000000000000000000000000000005", "node 5", 6);
+        machine.waiting_nodes = insert_to_tail_file(machine.waiting_nodes, query);
+        
+        kdm_debug("##############  waiting nodes: ##############\n");
+        print_values(machine.waiting_nodes);
+        
+        //Create sent_queries list
+        query = create_store_file("B1000000000000000000000000000000", "node 2", 6);
+        machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);  
+        tampon = machine.sent_queries;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-3;
+        
+        query = create_store_file("30000000000000000000000000000003", "node 3", 6);
+        machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);  
+        tampon = machine.sent_queries;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-3;
+        
+        query = create_store_file("40000000000000000000000000000004", "node 4", 6);
+        machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);  
+        tampon = machine.sent_queries;
+        while (tampon->next != NULL)
+        {
+            tampon = tampon->next;
+        }
+        tampon->timestamp = _timestamp-1;
+        query = create_store_file("50000000000000000000000000000005", "node 5", 6);
+        machine.sent_queries = insert_to_tail_file(machine.sent_queries, query);
+        kdm_debug("##############  waiting nodes: ##############\n");
+        printFiles(machine.sent_queries);
+        
+        kademMaintenance(&machine, NULL, addr, port);
+        
+        print_values(machine.sent_queries);
         //print_routing_table(machine.routes);
     
     
