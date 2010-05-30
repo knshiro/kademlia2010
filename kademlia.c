@@ -551,7 +551,7 @@ int kademPing(struct kademMachine * machine, char * addr, int port){
     struct kademMessage message;
     int ret;
     json_object *header, *argument;
-    char transactionId[HASH_SIGNATURE_LENGTH+1]; 
+    char transactionId[HASH_STRING_LENGTH+1]; 
     store_file* query;
     char * head;
     kdm_debug("id_ping: %s\n", machine->id);
@@ -1001,7 +1001,10 @@ int kademFindValue(struct kademMachine * machine, char * value, char* token, cha
     // Store Query in sent_queries
     head = json_object_to_json_string(message.header);
     query = create_store_file( transactionId, head, strlen(head)+1);
+    print_values(machine->sent_queries);
     machine->sent_queries = insert_to_tail_file(machine->sent_queries, query);
+    
+    print_values(machine->sent_queries);
 
     json_object_put(header);
     json_object_put(argument);

@@ -18,13 +18,14 @@ store_file* create_store_file( char* _key, char* _value, int _value_len){
     file->key = malloc((strlen(_key)+1)*sizeof(char));
     strcpy(file->key, _key);
     
-    if(_value_len!=0){
+    if(_value_len>0){
         file->value = malloc(_value_len*sizeof(char));
         memcpy(file->value, _value, _value_len);
-	file->value_len = _value_len;
+        file->value_len = _value_len;
     }
     else {
         file->value = NULL;
+        file->value_len = 0;
     }
     
     _timestamp = time (NULL);
@@ -57,9 +58,9 @@ stored_values insert_to_tail_file(stored_values values, store_file* file)
         file->timestamp = time(NULL);
         stored_values temp = values;
     
+        values = delete_key(values, file->key);
         if(values != NULL)
         {
-            values = delete_key(values, file->key);
             while(temp->next != NULL)
             {
                 temp = temp->next;
@@ -80,53 +81,6 @@ stored_values insert_to_tail_file(stored_values values, store_file* file)
     }
     
 }
-/*
-//Go through the stored_values to store the last store_file at the end of the list
-// Return the pointer to the head of the stored_values.
-stored_values delete_key(stored_values values, store_file* file)
-{
-store_file* temp;
-store_file* temp2;
-temp = values;
-temp2 = NULL;
-printf("\nok\n");
-
-if(values ->next == NULL)
-{
-printf("\nok2\n");
-fflush(stdout);
-return values;
-}
-else
-{
-printf("\nok3\n");
-fflush(stdout);
-if(values->next->next == NULL)
-{
-printf("\nNext next null\n");
-temp2 = values;
-values = temp->next;
-free(temp2);
-return values;
-}
-else
-{
-printf("\nok\n");
-while(temp->next->next != NULL)
-{	
-if(strcmp(temp->next->value, file->value)==0)
-{
-temp2 = temp;
-temp->next = temp->next->next;
-free(temp2);
-}
-}
-return values;
-}
-}
-}
-*/
-
 /** Go through the stored_values to delete any store_file that has the same
  * value as file
  * @param file file containing the value to be deleted
@@ -137,7 +91,9 @@ stored_values delete_key(stored_values values, char *key){
     store_file* temp;
     store_file* temp2=NULL;
     temp = values;
-
+    if(values == NULL){
+        return NULL;
+    }
     if(strcmp(temp->key, key)==0){
 	 temp2 = temp->next;
          delete_store_file(temp);
