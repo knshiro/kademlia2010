@@ -28,6 +28,7 @@ struct dhtMachine {
 };
 
 
+
 //Packet to send
 struct pkbuf {
 	//struct rtlp_hdr hdr;		/* Header of the packet */
@@ -39,6 +40,9 @@ struct pkbuf {
 /* Client PCB */
 struct rtlp_client_pcb {
 	int sockfd;			/* Corresponding UDP socket */
+
+	 int port_P2P;
+   	char* ip_P2P;
 
 	/* Current active pkbuf on the network */
 	struct pkbuf send_buf[RTLP_MAX_SEND_BUF_SIZE]; 		
