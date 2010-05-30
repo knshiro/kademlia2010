@@ -243,13 +243,13 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
 	    	query = json_object_get_string(json_object_object_get(message->header,"q"));		
 	    	kdm_debug("query: %s\n", query);
 	    	
-	        if(strcmp(query, KADEM_PING) == 0)
+	       /* if(strcmp( query, KADEM_PING) == 0)
 	        {
 	            kdm_debug("query: ping => nothing to do\n");
 	    	    //Do nothing
 	        }
 	        else
-	        {
+	        {*/
 	            kdm_debug("query: pas ping => enregistrement du node\n");
    		    // Extract value from KademMessage
     	    	char* hash_value;
@@ -301,7 +301,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
                 		kdm_debug("ip: %s, port: %i\n", ip_to_ping, port_to_ping);
                 		kademPing(machine, ip_to_ping, port_to_ping);
             		}
-		        }
+		        
     	    }
     	}
     }
@@ -1405,8 +1405,7 @@ int kademSendStoreValue(struct kademMachine * machine, node_details* node_to_sen
 
 
 int startKademlia(struct kademMachine * machine){
-
-    kdm_debug(">>>> startKademlia\n");
+  kdm_debug(">>>> startKademlia\n");
     int ret_select, num_read,from_port;
     socklen_t from_len;
     fd_set readfds;
@@ -1450,6 +1449,7 @@ int startKademlia(struct kademMachine * machine){
             // Messages from local rpc            #
             //#####################################
             if(FD_ISSET(machine->sock_local_rpc, &readfds)) {
+
                 if((num_read = recvfrom(machine->sock_local_rpc,udpPacket,sizeof(udpPacket),0,(struct sockaddr*) &from, &from_len)) < 0)
                 {
                     perror("Couldnt' receive from socket");
@@ -1472,22 +1472,22 @@ int startKademlia(struct kademMachine * machine){
                     if (strcmp(buffer,"print_routing_table") == 0){
                         RPCHandlePrintRoutingTable(machine, &message, from_addr, from_port);  
                     }  
-                    if (strcmp(buffer,"print_object_ids") == 0){
+                    else if (strcmp(buffer,"print_object_ids") == 0){
                         RPCHandlePrintObjects(machine, &message, from_addr, from_port); 
                     }                
-                    if (strcmp(buffer,"ping") == 0){
+                    else if (strcmp(buffer,"ping") == 0){
                         RPCHandlePing(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,"kill_node") == 0){
+                    else if (strcmp(buffer,"kill_node") == 0){
                         RPCHandleKillNode(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,"put") == 0){
-                        RPCHandleStoreValue(machine, &message, from_addr, from_port);  
+                    else if (strcmp(buffer,"put") == 0){
+                        RPCHandleStoreValue(machine, &message, from_addr, from_port); 
                     }
-                    if (strcmp(buffer,"get") == 0){
+                    else if (strcmp(buffer,"get") == 0){
                         RPCHandleFindValue(machine, &message, from_addr, from_port);  
                     }
-                    if (strcmp(buffer,"find_node") == 0){
+                    else if (strcmp(buffer,"find_node") == 0){
                         RPCHandleFindNode(machine, &message, from_addr, from_port);  
                     }
                     else{
@@ -1533,22 +1533,22 @@ int startKademlia(struct kademMachine * machine){
                     if (strcmp(buffer,KADEM_PING) == 0){
                         kademPong(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,KADEM_STORE) == 0){
+                    else if (strcmp(buffer,KADEM_STORE) == 0){
                         kademHandleStoreValue(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,KADEM_FIND_NODE) == 0){
+                    else if (strcmp(buffer,KADEM_FIND_NODE) == 0){
                         kademHandleFindNode(machine, &message, from_addr, from_port);  
                     }                
-                    if (strcmp(buffer,KADEM_FIND_VALUE) == 0){
+                    else if (strcmp(buffer,KADEM_FIND_VALUE) == 0){
                         kademHandleFindValue(machine, &message, from_addr, from_port);  
                     }  
                     else{
                         const char *transID; 
                         transID = json_object_get_string(json_object_object_get(message.header,"t"));
                         kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
-                    }   
+                    }  
+		    kademMaintenance(machine, &message, inet_ntoa(from.sin_addr), from.sin_port); 
                 }
-
 
                 // Message is an answer
                 else if (strcmp(buffer,KADEM_ANSWER) == 0){
@@ -1569,28 +1569,32 @@ int startKademlia(struct kademMachine * machine){
 
                         if (strcmp(query_type,KADEM_PING) == 0)
                         {
-                            kademHandlePong(machine, &message, from_addr, from_port);  
+                            kademHandlePong(machine, &message, from_addr, from_port);   
                         }                
-                        if (strcmp(query_type,KADEM_STORE) == 0)
+                        else if (strcmp(query_type,KADEM_STORE) == 0)
                         {
                             kademHandleAnswerStoreValue(machine, &message);  
                         }                
-                        if (strcmp(query_type,KADEM_FIND_NODE) == 0)
+                        else if (strcmp(query_type,KADEM_FIND_NODE) == 0)
                         {
                             kademHandleAnswerFindNode(machine, &message, from_addr, from_port);  
                         }                
-                        if (strcmp(query_type,KADEM_FIND_VALUE) == 0)
+                        else if (strcmp(query_type,KADEM_FIND_VALUE) == 0)
                         {
                             kademHandleAnswerFindValue(machine, &message, from_addr, from_port);  
                         } 
                         else
                         {
                             kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
-                        }   
-                        machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries    
-                    }               
+                        }  
+			
+		 	kdm_debug("transID: %s\n",transID);
+			printFiles(machine->sent_queries);
+                        machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries   
+			kdm_debug("transID: %s\n",transID); 
+                    }  
+	            kademMaintenance(machine, &message, inet_ntoa(from.sin_addr), from.sin_port);
                 }
-
 
                 // Message is an error
                 else if (strcmp(buffer,KADEM_ERROR) == 0){
@@ -1606,23 +1610,23 @@ int startKademlia(struct kademMachine * machine){
                     if (strcmp(_code,KADEM_ERROR_GENERIC) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
                     }
-                    if (strcmp(_code,KADEM_ERROR_INVALID_TOKEN) == 0){
+                    else if (strcmp(_code,KADEM_ERROR_INVALID_TOKEN) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
                     }
-                    if (strcmp(_code,KADEM_ERROR_PROTOCOL) == 0){
+                    else if (strcmp(_code,KADEM_ERROR_PROTOCOL) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
                     }
-                    if (strcmp(_code,KADEM_ERROR_METHOD_UNKNOWN) == 0){
+                    else if (strcmp(_code,KADEM_ERROR_METHOD_UNKNOWN) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
                     }
-                    if (strcmp(_code,KADEM_ERROR_STORE) == 0){
+                    else if (strcmp(_code,KADEM_ERROR_STORE) == 0){
                         fprintf(stderr, "%s from address: %s and port: %i", _value, from_addr, from_port);  
                     }   
                     else
                     {
                         kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
                     }
-                    machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries                                     
+                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries                                     
                 }
 
                 // Message type is unknown
@@ -1631,30 +1635,30 @@ int startKademlia(struct kademMachine * machine){
                     const char *transID; 
                     transID = json_object_get_string(json_object_object_get(message.header,"t"));
                     kademSendError(machine, transID, KADEM_ERROR_PROTOCOL, KADEM_ERROR_PROTOCOL_VALUE, from_addr, from_port);
-                    machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries
+                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries
                 }
             }
-
-            if(FD_ISSET(0, &readfds)) {
+   	     
+            if(FD_ISSET(fileno(stdin), &readfds)) {
                 scanf("%s",cmd,arg);
                 if (strcmp(cmd,"print_routing_table") == 0){
                     print_routing_table(machine->routes);
                 }  
-                if (strcmp(cmd,"print_object_ids") == 0){
+                else if (strcmp(cmd,"print_object_ids") == 0){
                     print_values(machine->stored_values);
                 }                
-                if (strcmp(cmd,"ping") == 0){
+                else if (strcmp(cmd,"ping") == 0){
                     scanf("%s",cmd,arg);
                 }                
-                if (strcmp(cmd,"kill_node") == 0){
+                else if (strcmp(cmd,"kill_node") == 0){
                 }                
-                if (strcmp(cmd,"put") == 0){
+                else if (strcmp(cmd,"put") == 0){
                     scanf("%s",cmd,arg);
                 }
-                if (strcmp(cmd,"get") == 0){
+                else if (strcmp(cmd,"get") == 0){
                     scanf("%s",cmd,arg);
                 }
-                if (strcmp(cmd,"find_node") == 0){
+                else if (strcmp(cmd,"find_node") == 0){
                     scanf("%s",cmd,arg);
                 }
                 else{
@@ -1667,6 +1671,7 @@ int startKademlia(struct kademMachine * machine){
     }
     kdm_debug("<<<< startKademlia\n");
     return 0;
+
 
 }
 
