@@ -22,8 +22,12 @@ int main(int argc, char **argv){
     
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         table.table[i] = NULL;
+    
     } 
-	printf("***************** first series of test  *************\n");
+    printf("************TEST ON EMPTY TABLE ******************\n");
+    node_list = k_nearest_nodes(node_list,&table,"00000000000","00000000041");
+	
+    printf("***************** first series of test  *************\n");
 	//TEST1:
 	int bucket_no;
 	bucket_no = insert_into_contact_table(&table, "ABE34AE3","12345665", "127.0.0.1", 9876);
