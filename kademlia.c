@@ -641,7 +641,7 @@ int kademHandlePong(struct kademMachine *machine, struct kademMessage *message, 
     id = json_object_get_string(json_object_object_get(response,"id"));
 	
     insert_into_contact_table(&machine->routes,machine->id,id,ip,port); 
-    delete_key(machine->sent_queries, transactionId); 
+    machine->sent_queries = delete_key(machine->sent_queries, transactionId); 
 
     if(strcmp(machine->latest_query_rpc.query,KADEM_PING)==0){
         if(strcmp(machine->latest_query_rpc.value,id)==0){
@@ -820,7 +820,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
                 }
 
                 // Delete the find query
-                delete_key(machine->store_find_queries, sent_query_value);
+                machine->store_find_queries = delete_key(machine->store_find_queries, sent_query_value);
 
             }
             else {
@@ -874,7 +874,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
                     }
 
                     // Delete the find query
-                    delete_key(machine->store_find_queries, sent_query_value);
+                    machine->store_find_queries = delete_key(machine->store_find_queries, sent_query_value);
                     json_object_put(rpc_msg_header);
                 }
             }
@@ -884,7 +884,7 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
         }
         json_object_put(response_content);
         json_object_put(response_content_nodes);
-        delete_key(machine->sent_queries, transaction_id);
+        machine->sent_queries = delete_key(machine->sent_queries, transaction_id);
 
     }
     else {
@@ -1177,7 +1177,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
                     json_object_put(rpc_msg_header);
                 }
                 // Delete the find query
-                delete_key(machine->store_find_queries, sent_query_value);
+                machine->store_find_queries = delete_key(machine->store_find_queries, sent_query_value);
             }
 
             // If no value found: new set of nodes received
@@ -1232,7 +1232,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
                     } 
 
                     // Delete the find query
-                    delete_key(machine->store_find_queries, sent_query_value);
+                    machine->store_find_queries = delete_key(machine->store_find_queries, sent_query_value);
                 }
 
             }
@@ -1252,7 +1252,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
     {
         kdm_debug("Query not found\n");
     }
-    delete_key(machine->sent_queries, transaction_id);
+    machine->sent_queries = delete_key(machine->sent_queries, transaction_id);
 
 
 
@@ -1583,7 +1583,7 @@ int startKademlia(struct kademMachine * machine){
                         {
                             kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
                         }   
-                        delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries    
+                        machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries    
                     }               
                 }
 
@@ -1618,7 +1618,7 @@ int startKademlia(struct kademMachine * machine){
                     {
                         kademSendError(machine, transID, KADEM_ERROR_METHOD_UNKNOWN, KADEM_ERROR_METHOD_UNKNOWN_VALUE, from_addr, from_port);
                     }
-                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries                                     
+                    machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries                                     
                 }
 
                 // Message type is unknown
@@ -1627,7 +1627,7 @@ int startKademlia(struct kademMachine * machine){
                     const char *transID; 
                     transID = json_object_get_string(json_object_object_get(message.header,"t"));
                     kademSendError(machine, transID, KADEM_ERROR_PROTOCOL, KADEM_ERROR_PROTOCOL_VALUE, from_addr, from_port);
-                    delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries
+                    machine->sent_queries = delete_key(machine->sent_queries, transID); //Delete the sent query from sent_queries
                 }
             }
 
