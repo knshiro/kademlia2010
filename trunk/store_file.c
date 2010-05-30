@@ -133,8 +133,14 @@ return values;
 stored_values delete_key(stored_values values, char *key){
 
     store_file* temp;
-    store_file* temp2;
+    store_file* temp2=NULL;
     temp = values;
+
+    if(strcmp(temp->key, key)==0){
+	 temp2 = temp->next;
+         delete_store_file(temp);
+	 return temp2; 
+    }
 
     if(values->next == NULL)
     {
@@ -144,7 +150,6 @@ stored_values delete_key(stored_values values, char *key){
         while(temp->next != NULL)
         {
             temp2 = temp->next;
-	    kdm_debug("before strcmp\n");
             if(strcmp(temp->next->key, key)==0)
             {
                 temp->next = temp->next->next;
