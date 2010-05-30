@@ -73,7 +73,6 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     strcpy(machine->latest_query_rpc.ip, "");
     machine->latest_query_rpc.port = 0;
 
-
     machine->stored_values = NULL;
     machine->sent_queries = NULL;
     machine->waiting_nodes = NULL;
@@ -84,6 +83,8 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         machine->routes.table[i] = NULL;
     }
+
+    srand (time (NULL));
 
     //####################################
     // Create first socket for local RPC #
@@ -477,20 +478,20 @@ int kademSendError(struct kademMachine * machine, const char *transactionId, con
 int generateTransactionId(char * transactionId, char * id){
 
     kdm_debug(">>>> generateTransactionId\n");
-    time_t now;
+    int random_nb;
     int len;
-    char string_time[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
+    char string_rand[32],buffer[HASH_STRING_LENGTH+1], buffer2[2*HASH_STRING_LENGTH+1],signature[HASH_SIGNATURE_LENGTH];
 
     //Retrieve time
-    now = time(NULL);
-    sprintf(string_time,"%ld",now);
-    len = strlen(string_time); 
-    kdm_debug("Time : %s (%d chars)\n", string_time, len);
+    random_nb = rand();
+    sprintf(string_rand,"%d",random_nb);
+    len = strlen(string_rand); 
+    kdm_debug("Rand : %s (%d chars)\n", string_rand, len);
 
     //Hash time
-    md5_buffer(string_time,len,signature);
+    md5_buffer(string_rand,len,signature);
     md5_sig_to_string(signature, buffer, HASH_STRING_LENGTH+1);
-    kdm_debug("Time hashed: %s\n", buffer);
+    kdm_debug("Rand hashed: %s\n", buffer);
     kdm_debug("id: %s\n", id);
     //Hash time + id
     strcpy(buffer2,buffer);
@@ -719,7 +720,6 @@ int kademHandleAnswerFindNode(struct kademMachine * machine, struct kademMessage
 
     transaction_id = json_object_get_string(json_object_object_get(message->header,"t"));
     kdm_debug("Transaction id : %s\n");
-    printFiles(machine->sent_queries);
     sent_query= find_key(machine->sent_queries, transaction_id); //result->value is a kademMessage (result points 
     if(sent_query != NULL){
         kdm_debug("no query\n");

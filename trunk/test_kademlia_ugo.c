@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
     printf("Transaction id is %s\n", hash);
     
     kdm_debug("==================== END Test message creation=====================\n\n\n");
-
+    
     //###############################
     // End  Test of udpToMessage    #
     //###############################
@@ -82,33 +82,77 @@ int main(int argc, char *argv[]){
     kademPong(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Pong\n\n");
     */
-    kdm_debug(">>>>TEST Find Node\n");
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
+    
+    kdm_debug(">>>>FIRST ROUND\n");
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+    
     kademFindNode(&machine,"test_node",addr,port);
-    printFiles(machine.sent_queries);
-    kdm_debug("<<<<TEST Find Node\n\n\n");
+    
+    kdm_debug("<<<<FIRST ROUND\n\n");
+    
+    kdm_debug(">>>>SECOND ROUND\n");
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+    
+    kademFindNode(&machine,"test_node",addr,port);
+    kdm_debug("<<<<SECOND ROUND\n\n");
+    
+    print_values(machine.sent_queries);
+
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
     
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     kdm_debug(">>>>FIRST ROUND node found\n");
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+    
     RPCHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND node found\n\n");
     
     kdm_debug(">>>>SECOND ROUND node not found\n");
-
     json_object_object_add(argument,"value",json_object_new_string(test2));
     json_object_object_add(header,"a",json_object_get(argument));
     message.header = header;
+    
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
 
     RPCHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<SECOUND ROUND node not found\n\n");
    
-    printFiles(machine.sent_queries);
-    printFiles(machine.store_find_queries);
+    print_values(machine.sent_queries);
+    print_values(machine.store_find_queries);
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
    
     
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST KADEM Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     
     kdm_debug(">>>>FIRST ROUND\n");
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+    
     kademHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND\n\n");
     
@@ -118,6 +162,14 @@ int main(int argc, char *argv[]){
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST KADEM Handle Answer Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     
     kdm_debug(">>>>FIRST ROUND\n");
+    kdm_debug("Sent Queries\n");
+    print_values(machine.sent_queries);
+    kdm_debug("\nFind Queries\n");
+    print_values(machine.store_find_queries);
+    kdm_debug("\nArriving message\n");
+    kdm_debug("%s\n\n", json_object_to_json_string(message.header));
+    
+
     kademHandleAnswerFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND\n\n");
 
