@@ -47,6 +47,7 @@ void kdm_debug(const char *msg, ...){
     va_end(ap);
 }
 
+//OK
 int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p, char *peer_addr){
 
     kdm_debug("<<<< initMachine\n");
@@ -207,7 +208,6 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     for (i=0; i<NUMBER_OF_BUCKETS; i++)
     {
         bucket = machine->routes.table[i];
-        //print_nodes(machine->routes.table[i], i); //Test
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
         {
             if (bucket->count == 2)
@@ -1611,7 +1611,7 @@ int startKademlia(struct kademMachine * machine){
   RPC communication
   ============================================*/
 
-//Segmentation Fault from kademFindValue. 
+//No Segmentation Fault
 int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
     kdm_debug(">>>> RPCHandleStoreValue\n");
