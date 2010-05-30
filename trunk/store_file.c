@@ -214,7 +214,7 @@ void printFiles(stored_values values)
     printf("Stored values :"); 
     while(temp != NULL)
     {
-        printf("%s,%s -> ",temp->key,temp->value);
+        printf("%s : %s -> ",temp->key,temp->value);
         temp = temp->next;
     }
     printf("NULL\n");

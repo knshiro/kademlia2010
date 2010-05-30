@@ -84,6 +84,7 @@ int main(int argc, char *argv[]){
     */
     kdm_debug(">>>>TEST Find Node\n");
     kademFindNode(&machine,"test_node",addr,port);
+    printFiles(machine.sent_queries);
     kdm_debug("<<<<TEST Find Node\n\n\n");
     
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
@@ -99,7 +100,9 @@ int main(int argc, char *argv[]){
 
     RPCHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<SECOUND ROUND node not found\n\n");
-    
+   
+    printFiles(machine.sent_queries);
+    printFiles(machine.store_find_queries);
     kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST RPC Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
    
     
@@ -108,20 +111,17 @@ int main(int argc, char *argv[]){
     kdm_debug(">>>>FIRST ROUND\n");
     kademHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<FIRST ROUND\n\n");
-  
+    
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
+   
 
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> BEGIN TEST KADEM Handle Answer Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
     
-    
-    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n");
-    
-    /* 
-        kdm_debug(">>>>TEST Handle Find Node\n");
-    print_routing_table(machine.routes);
+    kdm_debug(">>>>FIRST ROUND\n");
     kademHandleAnswerFindNode(&machine,&message,addr,port);
-    kdm_debug("<<<<TEST Handle Find Node\n\n");
-  
- */
+    kdm_debug("<<<<FIRST ROUND\n\n");
 
+    kdm_debug(">>>>>>>>>>>>>>>>>>>>>>> END TEST KADEM Handle Answer Find Node<<<<<<<<<<<<<<<<<<<<<<\n\n\n");
 
    /* 
     kdm_debug(">>>>TEST Find value\n");
