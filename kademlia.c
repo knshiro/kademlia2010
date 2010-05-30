@@ -79,6 +79,7 @@ int initMachine(struct kademMachine * machine, int port_local_rpc, int port_p2p,
     machine->waiting_nodes = NULL;
     machine->token_sent = NULL;
     machine->token_rec = NULL;
+    machine->store_find_queries = NULL;
 
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         machine->routes.table[i] = NULL;
@@ -1579,8 +1580,9 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     //TEMP: value to store
     temp = json_object_get_string(json_object_object_get(argument2,"value"));
     new_value = create_store_file(temp, data, length);
+    kdm_debug("<<<< insert_to_tail_file\n");
     insert_to_tail_file(machine->stored_values, new_value); //Value stored.
-
+    kdm_debug(">>>> insert_to_tail_file\n");
     //Answer to the RPC
     header = json_object_new_object(); 
 
@@ -1595,6 +1597,7 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
 
 
     if(kademSendMessage(machine->sock_local_rpc, &answer_message, addr, port)<0){
+	printf("Counldn't send message\n");
         return -1;
     }   //Answered to the RPC.
 
@@ -1613,15 +1616,29 @@ int RPCHandleStoreValue(struct kademMachine * machine, struct kademMessage * mes
     node_details* nearest_nodes;
     store_file* store_file_temp;
     //store the query GET into "store_find_queries".
+    kdm_debug("<<<< k_nearest_nodes\n");
     nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, temp);
-    store_file_temp = create_store_file(temp, nearest_nodes, sizeof(nearest_nodes));
+    kdm_debug(">>>> k_nearest_nodes\n");
+	if(nearest_nodes==NULL){
+		store_file_temp = create_store_file(temp, NULL, 0);
+	}else{
+		store_file_temp = create_store_file(temp, nearest_nodes, sizeof(node_details));
+	}
+   
+    kdm_debug("key store_file_temp: %s\n",store_file_temp->key);
+    kdm_debug("<<<< insert_to_tail_file\n");
+    
+    kdm_debug("machine->store_find_queries: %s\n",machine->store_find_queries);
     insert_to_tail_file(machine->store_find_queries, store_file_temp);
-
+    kdm_debug(">>>> insert_to_tail_file\n");
     //Create a token for this query.
     char token[HASH_SIGNATURE_LENGTH+1];    
     generateTransactionId(token, machine->id);
+   kdm_debug("token: %s\n",token);
     store_file* store_token;
-    store_token = create_store_file(store_token, message->payload, 0);
+    kdm_debug("message->payload: %s\n",message->payload);
+    //store the token in the key and the value waiting in the value field.
+    store_token = create_store_file(token, message->payload, 0);
     insert_to_tail_file(machine->token_sent, store_token);
 
     // Send find values request to nearest nodes and increment count
