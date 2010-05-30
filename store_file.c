@@ -50,23 +50,29 @@ void delete_store_file(store_file* store_file)
 stored_values insert_to_tail_file(stored_values values, store_file* file)
 {
     //Go through the stored_values to store the last store_file at the end of the list
-    file->timestamp = time(NULL);
-    stored_values temp = values;
-
-    if(values != NULL)
+    if(file == NULL)
     {
-        values = delete_key(values, file->key);
-        while(temp->next != NULL)
+        file->timestamp = time(NULL);
+        stored_values temp = values;
+    
+        if(values != NULL)
         {
-            temp = temp->next;
+            values = delete_key(values, file->key);
+            while(temp->next != NULL)
+            {
+                temp = temp->next;
+            }
+    
+            temp->next = file;
+    
+            return values;
+        }   
+        else {
+            values = file;
+            return values;
         }
-
-        temp->next = file;
-
-        return values;
-    }
-    else {
-        values = file;
+    else 
+    {
         return values;
     }
 }
