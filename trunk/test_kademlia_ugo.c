@@ -17,7 +17,7 @@ int main(int argc, char *argv[]){
     json_object *header, *argument;
     struct kademMessage message;
     char udpPacket[400], hash[HASH_STRING_LENGTH+1];
-    char test[] = "00000000000000000000000000000001";
+    char test[] = "be328b78dbf5117a5c5d77efad4e81c9";
     char * transactionId = "04";
     char * addr = "127.0.0.1";
     int port = 4000;
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     strcpy(peer_addr,"caca/8000");
 
     _kdm_debug = 1;
-    initMachine(&machine,6000,7000,peer_addr );
+    initMachine(&machine,6000,7000,"");
  
     for(i=0;i<NUMBER_OF_BUCKETS;i++){
         if(machine.routes.table[i] != NULL){
@@ -36,12 +36,15 @@ int main(int argc, char *argv[]){
     }
     kdm_debug("====================Machine inited, id: %s=====================\n\n\n", machine.id);
 
+    insert_into_contact_table(&machine.routes,machine.id,test,"127.0.0.1",12000);
+    print_routing_table(machine.routes);
+
     //###############################
     // Test of udpToMessage         #
     //###############################
     
+    kdm_debug("==================== BEGIN Test message creation=====================\n\n\n");
     generateTransactionId(hash,machine.id);
-    
     header = json_object_new_object(); 
     json_object_object_add(header, "t",json_object_new_string(transactionId));
     json_object_object_add(header, "y",json_object_new_string(KADEM_QUERY));
@@ -64,28 +67,43 @@ int main(int argc, char *argv[]){
     generateTransactionId(hash,machine.id);
     printf("Transaction id is %s\n", hash);
     
+    kdm_debug("==================== END Test message creation=====================\n\n\n");
 
     //###############################
     // End  Test of udpToMessage    #
     //###############################
 
-    kdm_debug(">>>>TEST Ping\n");
+    /*kdm_debug(">>>>TEST Ping\n");
     kademPing(&machine,"127.0.0.1",4000);
     kdm_debug("<<<<TEST Ping\n\n");
    
     kdm_debug(">>>>TEST Pong\n");
     kademPong(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Pong\n\n");
-    
+    */
     kdm_debug(">>>>TEST Find Node\n");
     kademFindNode(&machine,"test_node",addr,port);
     kdm_debug("<<<<TEST Find Node\n\n");
     
     kdm_debug(">>>>TEST Handle Find Node\n");
     print_routing_table(machine.routes);
-    kademHandleFindNode(&machine,&message,addr,port);
+    RPCHandleFindNode(&machine,&message,addr,port);
     kdm_debug("<<<<TEST Handle Find Node\n\n");
     
+    kdm_debug(">>>>TEST Handle Find Node\n");
+    print_routing_table(machine.routes);
+    kademHandleFindNode(&machine,&message,addr,port);
+    kdm_debug("<<<<TEST Handle Find Node\n\n");
+  
+    kdm_debug(">>>>TEST Handle Find Node\n");
+    print_routing_table(machine.routes);
+    kademHandleAnswerFindNode(&machine,&message,addr,port);
+    kdm_debug("<<<<TEST Handle Find Node\n\n");
+  
+ 
+
+
+   /* 
     kdm_debug(">>>>TEST Find value\n");
     kademFindValue(&machine,"value1","token1", addr,port);
     kdm_debug("<<<<TEST Find value\n\n");
@@ -123,7 +141,7 @@ int main(int argc, char *argv[]){
     kademSendError(&machine,"trans1",KADEM_ERROR_GENERIC,KADEM_ERROR_GENERIC_VALUE,addr,port);
     kdm_debug("<<<<Send error\n\n");
   
-
+*/
 	//###############################
     // Test of RPCHandlePing        #
     //###############################
