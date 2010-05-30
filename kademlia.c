@@ -208,8 +208,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
     for (i=0; i<NUMBER_OF_BUCKETS; i++)
     {
         bucket = machine->routes.table[i];
-        kdm_debug("now: %i\n", _timestamp);
-        print_nodes(machine->routes.table[i], i);
+        //print_nodes(machine->routes.table[i], i); //Test
         while ((bucket != NULL) && (_timestamp - bucket->timestamp > KADEM_TIMEOUT_REFRESH_DATA))
         {   
             kdm_debug("refresh1\n");
@@ -236,13 +235,13 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
 	//transactionID a u lieu de query
 	char * transactionID;
 	char* query;
-	transactionID = json_object_get_string(json_object_object_get(message,"t"));
+	transactionID = json_object_get_string(json_object_object_get(message->header,"t"));
 	store_file* file;
 	file = find_key(machine->sent_queries, transactionID);
 	if (file!=NULL){
 		json_object *new_obj;
     		new_obj = json_tokener_parse(file->value);
-		query = json_object_get_string(json_object_object_get(message,"q"));		
+		query = json_object_get_string(json_object_object_get(message->header,"q"));		
 		kdm_debug("query: %s\n", query);
 	}	
 	if(query == KADEM_PING){
@@ -250,7 +249,7 @@ int kademMaintenance(struct kademMachine * machine, struct kademMessage* message
 	}else{
    		// Extract value from KademMessage
     		char* hash_value;	
-    		hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message,"a"),"value"));
+    		hash_value = json_object_get_string(json_object_object_get(json_object_object_get(message->header,"a"),"value"));
     		//look for this value into the contact_table.
     		int bucket_val, j;
     		node_details* bucket2;
