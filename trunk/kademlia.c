@@ -1196,7 +1196,7 @@ int kademHandleAnswerFindValue(struct kademMachine * machine, struct kademMessag
 }
 
 
-//No segmentation fault
+//No Segmentation Fault
 int kademStoreValue(struct kademMachine * machine, char * token, char * value, char * data, int data_len, char *dst_addr, int dst_port){
 
     kdm_debug(">>>> kademStoreValue\n");
@@ -1964,7 +1964,7 @@ int RPCHandleFindValue(struct kademMachine * machine, struct kademMessage * mess
     }
 }
 
-
+//NO Segmentation Fault
 int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
     kdm_debug(">>>> RPCHandleKillNode\n");
@@ -1990,7 +1990,7 @@ int RPCHandleKillNode(struct kademMachine * machine, struct kademMessage * messa
     exit(0);
 }
 
-
+//NO Segmentation Fault
 int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * message, char *addr, int port){
 
 
