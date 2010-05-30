@@ -13,7 +13,7 @@
 #include "kademlia.h"
 
 
-
+//To remove
 
 // Insert a node_details to the tail of the bucket.
 // Return the pointer to the head of the node_details * (i.e. a struct node_details *).
