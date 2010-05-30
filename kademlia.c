@@ -663,7 +663,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     json_object *header, *response, *node_array, *query;
     const char * transactionId, *key;
     node_details* nodes = NULL, *current_node;
-    char * node_string;
+    char node_string[HASH_STRING_LENGTH+15+6+3+1];
 
     transactionId = json_object_get_string(json_object_object_get(message->header,"t"));
 
@@ -683,11 +683,7 @@ int kademHandleFindNode(struct kademMachine * machine, struct kademMessage * mes
     nodes = k_nearest_nodes(nodes,&machine->routes,machine->id,key); 
     current_node = nodes;
     while(current_node != NULL){
-        strcpy(node_string,nodes->ip);
-        strcat(node_string,"/");
-        sprintf(node_string+strlen(nodes->ip),"%d",nodes->port);
-        strcat(node_string,"/");
-        strcat(node_string,nodes->nodeID);
+        concatenate(current_node,node_string);
         json_object_array_add(node_array,json_object_new_string(node_string));
         current_node = current_node->next;
     }
@@ -1935,7 +1931,7 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
         // Store the query in the machine last_query field
         json_object *argument3;
         const char *query_value, *query_type;
-        node_details* nearest_nodes;
+        node_details* nearest_nodes = NULL;
         store_file* store_file_temp;
         
         query_type = json_object_get_string(json_object_object_get(message->header,KADEM_QUERY));
@@ -1951,39 +1947,29 @@ int RPCHandleFindNode(struct kademMachine * machine, struct kademMessage * messa
 
         // Search the nearest nodes and store it in store_find_queries machine's field
 
-        kdm_debug("Nearest node ->\n");
         nearest_nodes = k_nearest_nodes(nearest_nodes, &machine->routes, machine->id, query_value);
-        kdm_debug("Nearest passed\n");
         if(nearest_nodes != NULL){
             kdm_debug("Find node: %s/%s/%d\n",nearest_nodes->nodeID,nearest_nodes->ip,nearest_nodes->port);
             store_file_temp = create_store_file(temp, nearest_nodes, sizeof(node_details));
+
+            machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, store_file_temp);
+
+            kdm_debug("Stored find query\n");
+
+            // Send find values request to nearest nodes and increment count
+            store_file_temp->count = 0;
+            while (nearest_nodes != NULL)
+            {
+                kademFindNode(machine, temp, nearest_nodes->ip, nearest_nodes->port);
+                store_file_temp->count++;
+                nearest_nodes = nearest_nodes -> next;
+            }
         } else {
             kdm_debug("No nodes\n");
-            store_file_temp = create_store_file(temp, NULL, 0);
         }
-        kdm_debug("Stored find query\n");
-        if(machine->store_find_queries == NULL){
-            kdm_debug("GOOD\n");
-        }
-        else{
-            kdm_debug("BAD\n");
-        }
-       /* 
-        machine->store_find_queries = insert_to_tail_file(machine->store_find_queries, store_file_temp);
-
-        kdm_debug("Stored find query\n");
-        /*
-        // Send find values request to nearest nodes and increment count
-        store_file_temp->count = 0;
-        while (nearest_nodes != NULL)
-        {
-            kademFindNode(machine, temp, nearest_nodes->ip, nearest_nodes->port);
-            store_file_temp->count++;
-            nearest_nodes = nearest_nodes -> next;
-        }
-        kdm_debug("<<<< RPCHandleFindNode\n");
+              kdm_debug("<<<< RPCHandleFindNode\n");
         return -2;
-*/
+
     }
     kdm_debug("<<<< RPCHandleFindNode\n");
     return 0; 
