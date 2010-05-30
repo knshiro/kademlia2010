@@ -12,8 +12,7 @@
 #include "messaging.h"
 #include <dirent.h>
 #include <sys/wait.h>
-
-
+#include "md5.h"
 
 /* Message types */
 const char * const KADEM_QUERY      =    "q";                                        
@@ -89,11 +88,18 @@ int sockfd =  create_socket(atoi(argv[1]));
 printf("socket_P2P: %i\n",sockfd);
 cpcb.sockfd = sockfd;
 
+
+
+
+
 	//socket and port RPC
 struct rtlp_client_pcb cpcb_rpc;
 int sockfd2 =  create_socket(atoi(argv[2]));
 printf("socket_RPC: %i\n",sockfd);
 cpcb_rpc.sockfd = sockfd2;
+cpcb_rpc.port_P2P = argv[1];
+cpcb_rpc.ip_P2P = malloc(18);
+cpcb_rpc.ip_P2P = "127.0.0.1";
 
 	//IP address
 char hostname[100]; 
@@ -125,9 +131,11 @@ char buf_send[400];
 char buf_send2[40];
 char buf2[400];
 struct timeval tv;
-tv.tv_sec = 0;
+tv.tv_sec = 10;
+tv.tv_usec = 0;
 struct timeval tv2;
 tv2.tv_sec = 2;
+tv2.tv_usec = 0;
 struct kademMessage message_from_dht;
 int srv, srv2, leng_name, k;
 //Handle sending a message.
@@ -141,7 +149,7 @@ char* payload_from_get=(char*)malloc(40*sizeof(char));
 char* ip_address_from_get=(char*)malloc(16*sizeof(char));
 int port_from_get_int;
 char* port_from_get_char=(char*)malloc(6*sizeof(char));
-
+int get_send;
 FD_ZERO(&readfds);
 FD_SET(cpcb_rpc.sockfd, &readfds);
 FD_SET(fileno(stdin), &readfds);
@@ -152,16 +160,17 @@ if(put(&cpcb_rpc,&dhtmachine, login, host_address, argv[2])<0){
 	exit(-1);
 }
 
-printf("cpcb_p2p");
+
 //Wait for data in stdin or in socket
 while(1){
-
+	
 	FD_ZERO(&readfds);
 	FD_SET(cpcb.sockfd, &readfds);
 
 	FD_SET(fileno(stdin), &readfds);
 
 	//stdin or socket!
+	
 	srv = select(cpcb.sockfd+1, &readfds, NULL, NULL, &tv);
 	//printf("srv: %i\n", srv);
 	if (srv == -1) {
@@ -178,6 +187,7 @@ while(1){
 		} 
 		//stdin->send
 		else if(FD_ISSET(fileno(stdin), &readfds)){
+			
 			fgets(buf_send, sizeof(buf_send), stdin);
 			int leg = strlen(buf_send);
 			strncpy(buf_send2,buf_send,leg-1);
@@ -239,26 +249,27 @@ while(1){
 					delims = " ";
 					to_ID = strtok(buf_send,delims);
 					//printf("to_ID: %s\n",to_ID);
-					printf("test");
 					leng_name = strlen(to_ID)-3;
 					if(leng_name<1){
 						exit(-1);
 					}
 					strncpy(ID,to_ID+3,leng_name);
-
+					
 					strcpy(message,buf2+leng_name+4);
 					strcat(message2,"from:");
 					strcat(message2,login);
 					strcat(message2," ");
 					strcat(message2,message);
-					
+					printf("ID: %s\n",ID);
 					//send a GET to the DHT with the ID of the node.
- 					if(get(&cpcb_rpc,&dhtmachine,ID)>0){
+					get_send = get(&cpcb_rpc,&dhtmachine,ID);
+ 					if(get_send>0){
 						printf("Get sent!\n");
 					}
 					//Wait for the GET resp.
 					FD_ZERO(&readfds);
 					FD_SET(cpcb_rpc.sockfd, &readfds);
+					
 					srv2 = select(cpcb_rpc.sockfd+1, &readfds, NULL, NULL, &tv2);
 					//printf("srv2: %i\n", srv2);
 					if (srv2 == -1) {
@@ -419,11 +430,28 @@ return 0;
 int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * value, char* ip_address, int port){
 
 	//create the payload: "ip_address/port"
-	char payload[4000];
+	char payload[70];
 	char leng_payload[5];
-	strcat(payload, ip_address);
+	strcpy(payload, cpcb->ip_P2P);
+	printf("ip_address of mess: %s\n",cpcb->ip_P2P);
+	printf("payload avant: %s\n",payload);
 	strcat(payload,"/");
-	strcat(payload,port);
+	strcat(payload,cpcb->port_P2P);
+	strcat(payload,"/");
+	char aro[40]="@";
+	strcat(aro,value);
+	strcat(payload,aro);
+
+	//md5 convert @login to md5
+	const char* buf = "initialization of the buffer";
+	//strcpy(buf,aro);
+	const unsigned int buf_len = strlen(buf);
+	char* str = (char*)malloc(33*sizeof(char));
+	char* signature = (char*)malloc(128*sizeof(char));
+	hash(buf_len,buf, str, signature);
+	printf("str: %s\n",str);
+	free(signature);
+
 	int leng = strlen(payload);
 	sprintf(leng_payload,"%d",leng); 
 	printf("payload: %s, size=%i\n",payload,leng);
@@ -439,7 +467,7 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
     	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_STORE));
 
    	argument = json_object_new_object();
-   	json_object_object_add(argument,"value",json_object_new_string(value));
+   	json_object_object_add(argument,"value",json_object_new_string(str));
 	json_object_object_add(argument,"numbytes",json_object_new_string(leng_payload));
     	json_object_object_add(header,"a",json_object_get(argument));
 
@@ -451,7 +479,7 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
 	header2 = json_object_to_json_string(message.header);
     	
     	printf("message: %s\n",header2);
-
+	printf("dhtmachine->address_ip: %s   dhtmachine->port: %i\n ",dhtmachine->address_ip,dhtmachine->port);
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
 		return -1;
 	}
@@ -461,6 +489,22 @@ return 0;
 
 //Find value.
 int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
+
+
+	char aro[40]="@";
+	strcat(aro,key);
+	printf("aro: %s\n",aro);
+	const char* buf = "initialization of the buffer";
+	
+	//strcpy(buf,aro);
+	printf("test2\n");
+	const unsigned int buf_len = strlen(aro);
+	printf("buf_len: %i\n",buf_len);
+	char* str = (char*)malloc(33*sizeof(char));
+	char* signature = (char*)malloc(128*sizeof(char));
+	hash(buf_len,aro, str, signature);
+	printf("str: %s\n",str);
+	free(signature);
 
 	char* header2;
 
@@ -473,19 +517,20 @@ int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
     	json_object_object_add(header, KADEM_QUERY,json_object_new_string(KADEM_FIND_VALUE));
 
    	argument = json_object_new_object();
-   	json_object_object_add(argument,"value",json_object_new_string(key));
+   	json_object_object_add(argument,"value",json_object_new_string(str));
     	json_object_object_add(header,"a",json_object_get(argument));
 
 	message.header = header;
 	message.payloadLength = 0;
 
 	header2 = json_object_to_json_string(message.header);
- 
+ 	printf("dhtmachine->address_ip: %s   dhtmachine->port: %i\n ",dhtmachine->address_ip,dhtmachine->port);
+	printf("header GET: %s\n",header2);
 	if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
 		return 0;
 	}
 
-return 1;
+	return 1;
 }
 
 int find_node(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* node){
