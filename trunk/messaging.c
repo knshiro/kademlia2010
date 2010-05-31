@@ -73,6 +73,7 @@ int main(int argc, char* argv[]){
     //argv[4] = identifiant/login
 
     printf("client's port_P2P: %i\n", atoi(argv[1]));
+
     char* login = argv[4];
     printf("your login: %s\n", login);
 
@@ -87,8 +88,6 @@ int main(int argc, char* argv[]){
     int sockfd =  create_socket(atoi(argv[1]));
     printf("socket_P2P: %i\n",sockfd);
     cpcb.sockfd = sockfd;
-
-
 
 
 
@@ -137,17 +136,41 @@ int main(int argc, char* argv[]){
     tv2.tv_usec = 0;
     struct kademMessage message_from_dht;
     int srv, srv2, leng_name, k;
-    char ID[20], delims[20], message[400], message2[400], port_from_get_char[6];
+    char ID[20], delims[20], message[400], message2[400], port_from_get_char[50];
     char * to_ID, *payload_from_get, *ip_address_from_get;
     int port_from_get_int;
     int get_send;
-
+    int l=0;
     //Initialize / enter the network -> send a PUT.	
     if(put(&cpcb_rpc,&dhtmachine, login, host_address, argv[2])<0){
         printf("Cannot enter the network.");
         exit(-1);
     }
 
+    //Wait for the answer of the PUT.
+    printf("after put\n");
+    FD_ZERO(&readfds);
+    FD_SET(cpcb_rpc.sockfd, &readfds);
+    while(l==0){
+    	srv = select(cpcb_rpc.sockfd+1, &readfds, NULL, NULL, &tv);
+        printf("srv: %i\n",srv);
+    	if (srv == -1) {
+            	perror("select"); // error occurred in select()
+   	} else {
+ 		if(FD_ISSET(cpcb_rpc.sockfd, &readfds)) {
+			        printf("after put2\n");
+				l=1;
+                                bzero(buf_rec, sizeof(buf_rec));
+                                if((numread =recvfrom(cpcb_rpc.sockfd,buf_rec,sizeof(buf_rec),0,(struct sockaddr*) &from, &fromlen))<0){
+                                    error("Couldnt' receive from socket");	
+                                } else {
+                                    printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
+                                    printf("Buffer : %s\n",buf_rec);
+				}
+		}
+
+    	}
+   }
 
     //Wait for data in stdin or in socket
     while(1){
@@ -181,6 +204,7 @@ int main(int argc, char* argv[]){
                 strncpy(buf_send2,buf_send,leg-1);
                 bzero(message, sizeof(message));
                 bzero(message2, sizeof(message2));
+		printf("buf to send: %s\n", buf_send);
 
 
                 if(strcmp(buf_send2,"//print_table")==0){
@@ -209,17 +233,8 @@ int main(int argc, char* argv[]){
                         printf("kill_node sent!\n");
                     }
                     bzero(buf_send2, sizeof(buf_send2));
-                }/*
-                    else if(strcmp(strtok(buf_send2," "),"//get")==0){
-                    char get_[40];
-                    strcpy(get_,buf_send2+6);
-                    if(get(&cpcb,&dhtmachine,get_)>0){
-                    printf("Get sent!\n");
-                    }
-                    bzero(buf_send2, sizeof(buf_send2));
-                    bzero(get_, sizeof(get_));
-                    }*/
-                    else if(strcmp(buf_send2,"//find_node")==0){
+                }
+                else if(strcmp(buf_send2,"//find_node")==0){
                         char find[40];
                         strcpy(find,buf_send2+12);
                         if(find_node(&cpcb_rpc,&dhtmachine,find)>0){
@@ -235,7 +250,7 @@ int main(int argc, char* argv[]){
                         //ID: id of the node. message: message to send to the node.
                         strcpy(buf2,buf_send);					
                         to_ID = strtok(buf_send,delims);
-                        //printf("to_ID: %s\n",to_ID);
+                        printf("to_ID: %s\n",to_ID);
                         leng_name = strlen(to_ID)-3;
                         if(leng_name<1){
                             exit(-1);
@@ -244,9 +259,12 @@ int main(int argc, char* argv[]){
 
                         strcpy(message,buf2+leng_name+4);
                         strcat(message2,"from:");
+			printf("messsage 2from:  %s\n", message2);
                         strcat(message2,login);
+			printf("messsage login:  %s\n", message2);
                         strcat(message2," ");
                         strcat(message2,message);
+			printf("messsage 2message:  %s\n", message2);
                         printf("ID: %s\n",ID);
                         //send a GET to the DHT with the ID of the node.
                         get_send = get(&cpcb_rpc,&dhtmachine,ID);
@@ -271,6 +289,7 @@ int main(int argc, char* argv[]){
                                 if((numread =recvfrom(cpcb_rpc.sockfd,buf_rec,sizeof(buf_rec),0,(struct sockaddr*) &from, &fromlen))<0){
                                     error("Couldnt' receive from socket");	
                                 } else {
+				   
                                     printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
                                     printf("Buffer : %s\n",buf_rec);
                                     //extract IP address and Port.
@@ -281,15 +300,17 @@ int main(int argc, char* argv[]){
                                     strcpy(delims,"/");
                                     payload_from_get = message_from_dht.payload;
                                     ip_address_from_get = strtok(payload_from_get,delims);
-                                    printf("caca\n");
+                                    
                                     printf("%s\n",ip_address_from_get);
                                     leng_name = strlen(ip_address_from_get);
-                                    printf("caca\n");
+                                    
                                     printf("%s\n",message_from_dht.payload+leng_name+1);
                                     strcpy(port_from_get_char, message_from_dht.payload+leng_name+1);
+				    
                                     port_from_get_int = atoi(port_from_get_char);
                                     printf("ip_address to send: %s, port: %i\n", ip_address_from_get, port_from_get_int);
 
+					printf("payload sent:%s\n",message2);
                                     their_addr.sin_port = htons(port_from_get_int); 
                                     inet_aton(ip_address_from_get, &their_addr.sin_addr);					
 
@@ -471,7 +492,7 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
     header2 = json_object_to_json_string(message.header);
 
     printf("message: %s\n",header2);
-    printf("dhtmachine->address_ip: %s   dhtmachine->port: %i\n ",dhtmachine->address_ip,dhtmachine->port);
+    
     if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
         return -1;
     }
