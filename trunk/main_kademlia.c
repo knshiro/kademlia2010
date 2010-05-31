@@ -9,11 +9,12 @@
 
 int main(int argc, char *argv[]){
     int c;
-    opterr = 0;
+    opterr = 0;	
     struct kademMachine machine;
     char *dhtnode;
     int dhtport, localrpcport; 
-
+    _kdm_trace = 1;
+    
     while ((c = getopt (argc, argv, "d")) != -1) {
         switch (c)
         {
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]){
         return 1;
     } else {
         dhtport = atoi(argv[optind]);
+	kdm_debug("inside main: %i\n",dhtport);
         localrpcport = atoi(argv[optind+1]);
         dhtnode = argv[optind+2];
     }

@@ -210,7 +210,7 @@ int find_node_details(char* this_node, char* other_node){
     int res;
     char* distance = (char*)malloc(strlen(this_node)*sizeof(char));
     distance = XORmetrics (distance, this_node, other_node);
-    printf("distance: %s\n", distance);
+    
     int length = strlen(distance);
     int i=0;
     while(distance[i]=='0'){
@@ -232,7 +232,7 @@ int find_node_details(char* this_node, char* other_node){
         res = 4*len+3;
     }
 
-    printf("resultat: %i\n", res);
+  
     return res;
 }
 
@@ -282,11 +282,13 @@ node_details* k_nearest_nodes(node_details* result, routing_table* routes, char*
         int go_back=1;
 	
         //find the k_bucket where the node should be.
+	//kdm_debug("<<<< find_node_details\n");
         bucket_no = find_node_details(this_node, node_to_find);
+	//kdm_debug(">>>> find_node_details\n");
         //look for the node into the bucket
         node_details* find=NULL;
         find = look_for_IP(routes->table[bucket_no], node_to_find);
-
+	
         //if the node is found
         if (find != NULL){
                 result = find;
@@ -401,7 +403,8 @@ node_details* create_node_from_string(char* concatenated){
     buffer = strdup (concatenated);
     int count = 1;
 
-    char nodeID[40], ip[20];
+    char* nodeID = malloc(16*sizeof(char));
+    char * ip = malloc(15*sizeof(char));
     int port;
 
     pointer = strtok( buffer, separateur );
@@ -430,10 +433,19 @@ node_details* delete_node(node_details* node, char *nodeID){
     node_details* temp2;
     temp = node;
 
-    if(strcmp(node->nodeID, nodeID)==0)
+    if(node == NULL){
+        return NULL;
+    }
+    if(node->next == NULL)
     {
-        node = node->next;
-        free_node(temp);
+        if(strcmp(temp->nodeID, nodeID)==0)
+        {
+            free_node(temp);
+            return NULL;
+        }
+        else {
+            return node;
+        }
     }
     else {
         while(temp->next != NULL)

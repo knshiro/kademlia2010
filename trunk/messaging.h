@@ -23,7 +23,7 @@ struct kademMessage {
 
 struct dhtMachine {
    int port;
-   char* address_ip;
+   char address_ip[20];
 
 };
 
@@ -41,8 +41,8 @@ struct pkbuf {
 struct rtlp_client_pcb {
 	int sockfd;			/* Corresponding UDP socket */
 
-	 int port_P2P;
-   	char* ip_P2P;
+	int port_P2P;
+   	char ip_P2P[20];
 
 	/* Current active pkbuf on the network */
 	struct pkbuf send_buf[RTLP_MAX_SEND_BUF_SIZE]; 		

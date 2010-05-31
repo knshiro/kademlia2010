@@ -60,7 +60,7 @@ extern const char * const KADEM_ERROR_STORE_VALUE;
 
 /* Debug variable */
 int _kdm_debug ;
-
+int _kdm_trace;
 
 /* Structure to store the message which was sent/received */
 
@@ -180,7 +180,7 @@ int generateTransactionId(char * transactionId, char *id);
  *               1   Not finished
  *               -1  failure
 */
-int lookUpRound(struct kademMachine * machine, store_file *find_query, json_object * response_content_nodes, const char* node_id, char * ip, int port);
+int lookUpRound(struct kademMachine * machine, const char * token, store_file *find_query, json_object * response_content_nodes, const char* node_id, char * ip, int port);
 
 /**
  *  sends a kadmelia ping request to addr, port

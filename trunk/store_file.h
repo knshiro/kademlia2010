@@ -15,7 +15,7 @@
 typedef struct store_file store_file;
 struct store_file
 {
-    char* key;
+   	char* key;
 	char* value;
 	int value_len;	
 	int count;
