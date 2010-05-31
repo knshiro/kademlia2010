@@ -11,6 +11,7 @@
 
 //Create a store_file struct
 store_file* create_store_file( char* _key, char* _value, int _value_len){
+	
     time_t _timestamp;
     store_file* file =malloc(sizeof(store_file));
 
@@ -94,9 +95,9 @@ stored_values delete_key(stored_values values, char *key){
         return NULL;
     }
     if(strcmp(temp->key, key)==0){
-        temp2 = temp->next;
-        delete_store_file(temp);
-        return temp2; 
+	 temp2 = temp->next;
+         delete_store_file(temp);
+	 return temp2; 
     }
 
     if(values->next == NULL)
