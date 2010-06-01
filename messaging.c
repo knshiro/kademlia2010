@@ -148,24 +148,21 @@ int main(int argc, char* argv[]){
     }
 
     //Wait for the answer of the PUT.
-    printf("after put\n");
     FD_ZERO(&readfds);
     FD_SET(cpcb_rpc.sockfd, &readfds);
     while(l==0){
     	srv = select(cpcb_rpc.sockfd+1, &readfds, NULL, NULL, &tv);
-        printf("srv: %i\n",srv);
     	if (srv == -1) {
             	perror("select"); // error occurred in select()
    	} else {
  		if(FD_ISSET(cpcb_rpc.sockfd, &readfds)) {
-			        printf("after put2\n");
 				l=1;
                                 bzero(buf_rec, sizeof(buf_rec));
                                 if((numread =recvfrom(cpcb_rpc.sockfd,buf_rec,sizeof(buf_rec),0,(struct sockaddr*) &from, &fromlen))<0){
                                     error("Couldnt' receive from socket");	
                                 } else {
                                     printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
-                                    printf("Buffer : %s\n",buf_rec);
+                                    printf("%s\n\n",buf_rec);
 				}
 		}
 
@@ -183,7 +180,7 @@ int main(int argc, char* argv[]){
         //stdin or socket!
 
         srv = select(cpcb.sockfd+1, &readfds, NULL, NULL, &tv);
-        //printf("srv: %i\n", srv);
+
         if (srv == -1) {
             perror("select"); // error occurred in select()
         } else {
@@ -204,7 +201,7 @@ int main(int argc, char* argv[]){
                 strncpy(buf_send2,buf_send,leg-1);
                 bzero(message, sizeof(message));
                 bzero(message2, sizeof(message2));
-		printf("buf to send: %s\n", buf_send);
+		//printf("buf to send: %s\n", buf_send);
 
 
                 if(strcmp(buf_send2,"//print_table")==0){
@@ -250,7 +247,7 @@ int main(int argc, char* argv[]){
                         //ID: id of the node. message: message to send to the node.
                         strcpy(buf2,buf_send);					
                         to_ID = strtok(buf_send,delims);
-                        printf("to_ID: %s\n",to_ID);
+                        //printf("to_ID: %s\n",to_ID);
                         leng_name = strlen(to_ID)-3;
                         if(leng_name<1){
                             exit(-1);
@@ -259,13 +256,13 @@ int main(int argc, char* argv[]){
 
                         strcpy(message,buf2+leng_name+4);
                         strcat(message2,"from:");
-			printf("messsage 2from:  %s\n", message2);
+			
                         strcat(message2,login);
-			printf("messsage login:  %s\n", message2);
+			
                         strcat(message2," ");
                         strcat(message2,message);
-			printf("messsage 2message:  %s\n", message2);
-                        printf("ID: %s\n",ID);
+			
+                        
                         //send a GET to the DHT with the ID of the node.
                         get_send = get(&cpcb_rpc,&dhtmachine,ID);
                         if(get_send>0){
@@ -290,33 +287,34 @@ int main(int argc, char* argv[]){
                                     error("Couldnt' receive from socket");	
                                 } else {
 				   
-                                    printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
-                                    printf("Buffer : %s\n",buf_rec);
+                                    //printf("Message received from %s on port %i\n",inet_ntoa(from.sin_addr),ntohs(from.sin_port));
+                                    //printf("Buffer : %s\n",buf_rec);
                                     //extract IP address and Port.
                                     message_from_dht = kademUdpToMessage(buf_rec, numread);
-                                    printf("ip_address/port from new node: %s\n",message_from_dht.payload);
-                                    printf("numread %d, sizeof(bufrec) %d, payload%d\n",numread,sizeof(buf_rec),message_from_dht.payloadLength);
+                                    //printf("ip_address/port to send message to: %s\n",message_from_dht.payload);
+                                    //printf("numread %d, sizeof(bufrec) %d, payload%d\n",numread,sizeof(buf_rec),message_from_dht.payloadLength);
                                     //Charge the IP address and the port
                                     strcpy(delims,"/");
                                     payload_from_get = message_from_dht.payload;
                                     ip_address_from_get = strtok(payload_from_get,delims);
                                     
-                                    printf("%s\n",ip_address_from_get);
+                                    //printf("%s\n",ip_address_from_get);
                                     leng_name = strlen(ip_address_from_get);
                                     
-                                    printf("%s\n",message_from_dht.payload+leng_name+1);
+                                    //printf("%s\n",message_from_dht.payload+leng_name+1);
                                     strcpy(port_from_get_char, message_from_dht.payload+leng_name+1);
 				    
                                     port_from_get_int = atoi(port_from_get_char);
-                                    printf("ip_address to send: %s, port: %i\n", ip_address_from_get, port_from_get_int);
+                                    printf("ip_address to send the message: %s, port: %i\n", ip_address_from_get, port_from_get_int);
 
-					printf("payload sent:%s\n",message2);
+					//printf("payload sent:%s\n",message2);
                                     their_addr.sin_port = htons(port_from_get_int); 
                                     inet_aton(ip_address_from_get, &their_addr.sin_addr);					
 
                                     if(sendto(sockfd, message2, strlen(message2), flags, (struct sockaddr *)&their_addr, sizeof their_addr)<0){
                                         error("Couldnt' send");
                                     }
+				    printf("Message sent\n\n");
                                 }
                             }
                         }
@@ -449,8 +447,8 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
     char payload[70];
     char leng_payload[5];
     strcpy(payload, cpcb->ip_P2P);
-    printf("ip_address of mess: %s\n",cpcb->ip_P2P);
-    printf("payload avant: %s\n",payload);
+    //printf("ip_address of mess: %s\n",cpcb->ip_P2P);
+    //printf("payload avant: %s\n",payload);
     strcat(payload,"/");
     sprintf(port_str,"%d",cpcb->port_P2P);
     strcat(payload,port_str);
@@ -463,11 +461,11 @@ int put(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char * valu
     const char buf = "initialization of the buffer";
     //strcpy(buf,aro);
     hash(strlen(aro),aro, str, signature);
-    printf("str: %s\n",str);
+    //printf("str: %s\n",str);
 
     int leng = strlen(payload)+1;
     sprintf(leng_payload,"%d",leng); 
-    printf("payload: %s, size=%i\n",payload,leng);
+    //printf("payload: %s, size=%i\n",payload,leng);
 
     char* header2;
 
@@ -506,14 +504,14 @@ int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
 
     char* str[33], signature[16], aro[40]="@";
     strcat(aro,key);
-    printf("aro: %s\n",aro);
+    //printf("aro: %s\n",aro);
 
     //strcpy(buf,aro);
-    printf("test2\n");
+    
     const unsigned int buf_len = strlen(aro);
-    printf("buf_len: %i\n",buf_len);
+    //printf("buf_len: %i\n",buf_len);
     hash(buf_len,aro, str, signature);
-    printf("str: %s\n",str);
+    //printf("str: %s\n",str);
 
     const char* header2;
 
@@ -533,8 +531,8 @@ int get(struct rtlp_client_pcb* cpcb, struct dhtMachine* dhtmachine, char* key){
     message.payloadLength = 0;
 
     header2 = json_object_to_json_string(message.header);
-    printf("dhtmachine->address_ip: %s   dhtmachine->port: %i\n ",dhtmachine->address_ip,dhtmachine->port);
-    printf("header GET: %s\n",header2);
+    //printf("dhtmachine->address_ip: %s   dhtmachine->port: %i\n ",dhtmachine->address_ip,dhtmachine->port);
+    //printf("header GET: %s\n",header2);
     if(kademSendMessage(cpcb->sockfd, &message, dhtmachine->address_ip, dhtmachine->port)<0){
         return 0;
     }
