@@ -1,0 +1,51 @@
+To make the program work:
+
+
+1) Compile the JSON library: 
+	go into json-c-0.9 folder
+	type ./configure
+	type make
+
+2) To compile the program
+	type make all in the root directory
+
+3) Start the program
+	DHT: ./kademlia <dhtport> <RPCport> <127.0.0.1/4200>
+	      <dhtport>: port on which the DHT is going to communicate with other DHTs
+   	      <RPCport>: port on which the DHT is going to communicate with the messaging application
+	      <127.0.0.1/4200> : contact details of another DHT (that is connected to the network). 
+
+
+	Messaging: ./messaging <MessagingPort> <RPCport> <DHTport> <login>
+		   <MessagingPort> : port used to talk to other messaging applications (port stored into the DHT)
+		   <RPCport> : port used to talk to the DHT
+		   <DHTport> : port of the DHT to connect to
+		   <login> : login.
+
+
+4) What to type once it is started:
+	DHT: 
+	   print_routing_table
+	   print_object_ids
+	   ...
+    
+        Messaging App:
+ 	   To send a message to jack: "to:jack <message>"
+
+
+
+
+5) Example:
+        Start 2 DHTs and 2 messaging applications:
+
+	./kademlia 4100 3100 127.0.0.1/4200
+	./kademlia 4200 3200 127.0.0.1/4100
+	
+	./messaging 9200 8200 3100 jack
+	./messaging 7200 6200 3200 joe
+	
+
+################################
+
+N.B: the report has been submitted before we knew we add an extension, so many bugs mentionned in it has been fixed.
+
